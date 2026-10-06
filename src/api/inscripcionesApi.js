@@ -1,0 +1,72 @@
+import axiosClient from './axiosClient';
+import { initialInscripciones } from '../utils/mockData';
+
+let localInscripcionesStore = [...initialInscripciones];
+
+export const inscripcionesApi = {
+  getAll: async (params = {}) => {
+    try {
+      const response = await axiosClient.get('/academico/inscripciones/', { params });
+      return response.data.results || response.data;
+    } catch (error) {
+      console.warn('API /academico/inscripciones/ fallback to local store');
+      let filtered = [...localInscripcionesStore];
+      if (params.search) {
+        const q = params.search.toLowerCase();
+        filtered = filtered.filter(i =>
+          i.alumno_nombre?.toLowerCase().includes(q) ||
+          i.alumno_cedula?.toLowerCase().includes(q) ||
+          i.estado_inscripcion?.toLowerCase().includes(q)
+        );
+      }
+      if (params.estado_inscripcion) {
+        filtered = filtered.filter(i => i.estado_inscripcion === params.estado_inscripcion);
+      }
+      return filtered;
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await axiosClient.get(`/academico/inscripciones/${id}/`);
+      return response.data;
+    } catch (error) {
+      return localInscripcionesStore.find(i => i.id_inscripcion === Number(id));
+    }
+  },
+
+  create: async (data) => {
+    try {
+      const response = await axiosClient.post('/academico/inscripciones/', data);
+      return response.data;
+    } catch (error) {
+      const newItem = { id_inscripcion: Date.now(), ...data };
+      localInscripcionesStore.unshift(newItem);
+      return newItem;
+    }
+  },
+
+  update: async (id, data) => {
+    try {
+      const response = await axiosClient.put(`/academico/inscripciones/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      const index = localInscripcionesStore.findIndex(i => i.id_inscripcion === Number(id));
+      if (index !== -1) {
+        localInscripcionesStore[index] = { ...localInscripcionesStore[index], ...data };
+        return localInscripcionesStore[index];
+      }
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    try {
+      await axiosClient.delete(`/academico/inscripciones/${id}/`);
+      return true;
+    } catch (error) {
+      localInscripcionesStore = localInscripcionesStore.filter(i => i.id_inscripcion !== Number(id));
+      return true;
+    }
+  }
+};
