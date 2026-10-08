@@ -4,7 +4,6 @@ import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Personal } from './pages/Personal';
 import { Profesores } from './pages/Profesores';
-import { Representantes } from './pages/Representantes';
 import { Asistencias } from './pages/Asistencias';
 import { Alumnos } from './pages/Alumnos';
 import { Inscripciones } from './pages/Inscripciones';
@@ -23,8 +22,6 @@ function MainContent() {
         return <Personal />;
       case 'profesores':
         return <Profesores />;
-      case 'representantes':
-        return <Representantes />;
       case 'alumnos':
         return <Alumnos />;
       case 'inscripciones':
@@ -39,7 +36,6 @@ function MainContent() {
   const titles = {
     personal: 'Panel de Gestión de Personal',
     profesores: 'Panel de Gestión de Profesores',
-    representantes: 'Panel de Representantes Legales',
     alumnos: 'Panel de Gestión de Alumnos',
     inscripciones: 'Gestión de Inscripciones',
     asistencias: 'Control de Asistencia por Grado y Sección',

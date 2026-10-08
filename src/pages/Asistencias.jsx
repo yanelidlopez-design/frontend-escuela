@@ -190,51 +190,60 @@ export const Asistencias = () => {
     if (!grupoActivo || alumnos.length === 0) return;
     setGuardando(true);
     setMensaje(null);
-    const gid = idGrupo(grupoActivo);
-    let creadas = 0;
-    let actualizadas = 0;
-    const errores = [];
 
-    await Promise.all(
-      alumnos.map(async (al) => {
-        const marca = marcas[al.id_alumno];
-        if (!marca) return;
-        const payload = {
-          fecha,
-          alumno: al.id_alumno,
-          grupo: gid,
-          estado: marca.estado,
-          observaciones: marca.observaciones || '',
-        };
-        try {
-          const previo = previas[al.id_alumno];
-          if (previo?.id_asistencia) {
-            await asistenciasApi.update(previo.id_asistencia, payload);
-            actualizadas++;
-          } else {
-            await asistenciasApi.create(payload);
-            creadas++;
+    try {
+      const gid = idGrupo(grupoActivo);
+      let creadas = 0;
+      let actualizadas = 0;
+      const errores = [];
+
+      await Promise.all(
+        alumnos.map(async (al) => {
+          const marca = marcas[al.id_alumno];
+          if (!marca) return;
+          const payload = {
+            fecha,
+            alumno: al.id_alumno,
+            grupo: gid,
+            estado: marca.estado,
+            observaciones: marca.observaciones || '',
+          };
+          try {
+            const previo = previas[al.id_alumno];
+            if (previo?.id_asistencia) {
+              await asistenciasApi.update(previo.id_asistencia, payload);
+              actualizadas++;
+            } else {
+              await asistenciasApi.create(payload);
+              creadas++;
+            }
+          } catch (err) {
+            console.error(err);
+            errores.push(nombreAlumno(al));
           }
-        } catch (err) {
-          console.error(err);
-          errores.push(nombreAlumno(al));
-        }
-      })
-    );
+        })
+      );
 
-    setGuardando(false);
-
-    if (errores.length > 0) {
+      if (errores.length > 0) {
+        setMensaje({
+          tipo: 'error',
+          texto: `No se pudieron guardar ${errores.length} registro(s): ${errores.join(', ')}`,
+        });
+      } else {
+        setMensaje({
+          tipo: 'ok',
+          texto: `Asistencia guardada: ${creadas} nueva(s), ${actualizadas} actualizada(s) — ${fecha}`,
+        });
+        await cargarListado();
+      }
+    } catch (err) {
+      console.error(err);
       setMensaje({
         tipo: 'error',
-        texto: `No se pudieron guardar ${errores.length} registro(s): ${errores.join(', ')}`,
+        texto: 'Ocurrió un error al procesar el lote de asistencias',
       });
-    } else {
-      setMensaje({
-        tipo: 'ok',
-        texto: `Asistencia guardada: ${creadas} nueva(s), ${actualizadas} actualizada(s) — ${fecha}`,
-      });
-      await cargarListado();
+    } finally {
+      setGuardando(false);
     }
   };
 

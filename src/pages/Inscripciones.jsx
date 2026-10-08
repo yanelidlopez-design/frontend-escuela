@@ -2,16 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { inscripcionesApi } from '../api/inscripcionesApi';
 import { alumnosApi } from '../api/alumnosApi';
 import { gruposApi } from '../api/gruposApi';
-import { representantesApi } from '../api/representantesApi';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
 import { Plus, Search, Edit2, Trash2, BookOpen, RefreshCw, Calendar } from 'lucide-react';
+
+const nombreGrado = (g) => g?.grado_detalle?.nombre_grado || (typeof g?.grado === 'string' ? g.grado : '');
+const nombreSeccion = (g) => g?.seccion_detalle?.nombre_seccion || (typeof g?.seccion === 'string' ? g.seccion : '');
+const nombreTurno = (g) => g?.turno_detalle?.nombre_turno || (typeof g?.turno === 'string' ? g.turno : '');
+
 
 export const Inscripciones = () => {
   const [inscripciones, setInscripciones] = useState([]);
   const [alumnos, setAlumnos] = useState([]);
   const [grupos, setGrupos] = useState([]);
-  const [representantes, setRepresentantes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
@@ -49,23 +52,22 @@ export const Inscripciones = () => {
       condicion_fisica: '',
       discapacidad: false,
       tipo_discapacidad: '',
-      id_representante: ''
+      representante: { cedula: '', nombre: '', telefono: '' },
+      parentesco: ''
     }
   });
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [inscripcionesData, alumnosData, gruposData, representantesData] = await Promise.all([
+      const [inscripcionesData, alumnosData, gruposData] = await Promise.all([
         inscripcionesApi.getAll({ search, estado_inscripcion: estadoFilter }),
         alumnosApi.getAll(),
-        gruposApi.getAll(),
-        representantesApi.getAll()
+        gruposApi.getAll()
       ]);
       setInscripciones(inscripcionesData);
       setAlumnos(alumnosData);
       setGrupos(gruposData);
-      setRepresentantes(representantesData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -111,7 +113,8 @@ export const Inscripciones = () => {
           condicion_fisica: '',
           discapacidad: false,
           tipo_discapacidad: '',
-          id_representante: ''
+          representante: { cedula: '', nombre: '', telefono: '' },
+          parentesco: ''
         }
       });
     } else {
@@ -147,7 +150,8 @@ export const Inscripciones = () => {
           condicion_fisica: '',
           discapacidad: false,
           tipo_discapacidad: '',
-          id_representante: ''
+          representante: { cedula: '', nombre: '', telefono: '' },
+          parentesco: ''
         }
       });
     }
@@ -158,12 +162,20 @@ export const Inscripciones = () => {
     e.preventDefault();
     try {
       if (formData.crearNuevoAlumno) {
-        // Primero crear el nuevo alumno
-        const nuevoAlumno = await alumnosApi.create({
-          ...formData.nuevoAlumno,
+        // Construir payload del alumno; el representante viaja anidado (opcional)
+        const { representante, parentesco, ...camposAlumno } = formData.nuevoAlumno;
+        const payloadAlumno = {
+          ...camposAlumno,
           fecha_inscripcion_inicial: formData.fecha_inscripcion,
           estatus_general: 'Activo'
-        });
+        };
+        if (representante && representante.cedula && representante.cedula.trim()) {
+          payloadAlumno.representante = representante;
+          payloadAlumno.parentesco = parentesco;
+        }
+
+        // Crear alumno: el backend crea representante + relación pivot de forma atómica
+        const nuevoAlumno = await alumnosApi.create(payloadAlumno);
         
         // Luego crear la inscripción con el nuevo alumno
         const payload = {
@@ -707,21 +719,59 @@ export const Inscripciones = () => {
               </div>
 
               <div className="border-b border-slate-200 pb-4">
-                <h4 className="text-sm font-semibold text-slate-800 mb-3">👨‍👩‍👧 Representante Legal</h4>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Representante</label>
-                  <select
-                    value={formData.nuevoAlumno.id_representante}
-                    onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, id_representante: e.target.value } })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
-                  >
-                    <option value="">Seleccionar representante...</option>
-                    {representantes.map((rep) => (
-                      <option key={rep.id_representante} value={rep.id_representante}>
-                        {rep.primer_nombre} {rep.primer_apellido} - {rep.cedula}
-                      </option>
-                    ))}
-                  </select>
+                <h4 className="text-sm font-semibold text-slate-800 mb-3">👨‍👩‍👧 Datos del Representante Legal</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Cédula</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.nuevoAlumno.representante.cedula}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, representante: { ...formData.nuevoAlumno.representante, cedula: e.target.value } } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      placeholder="ej. V-12345678"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Teléfono</label>
+                    <input
+                      type="tel"
+                      required
+                      value={formData.nuevoAlumno.representante.telefono}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, representante: { ...formData.nuevoAlumno.representante, telefono: e.target.value } } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      placeholder="ej. 04121234567"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Nombre Completo</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.nuevoAlumno.representante.nombre}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, representante: { ...formData.nuevoAlumno.representante, nombre: e.target.value } } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      placeholder="ej. Pedro Pérez"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Parentesco</label>
+                    <select
+                      required
+                      value={formData.nuevoAlumno.parentesco}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, parentesco: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    >
+                      <option value="">Seleccionar parentesco...</option>
+                      <option value="Padre">Padre</option>
+                      <option value="Madre">Madre</option>
+                      <option value="Abuelo/a">Abuelo/a</option>
+                      <option value="Tío/a">Tío/a</option>
+                      <option value="Tutor Legal">Tutor Legal</option>
+                      <option value="Hermano/a">Hermano/a</option>
+                      <option value="Otro">Otro</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -754,12 +804,12 @@ export const Inscripciones = () => {
             >
               <option value="">Seleccionar grupo...</option>
               {grupos.map((grupo) => {
-                const grado = grupo.grado?.nombre_grado || grupo.grado;
-                const seccion = grupo.seccion?.nombre_seccion || grupo.seccion;
-                const periodo = grupo.periodo?.nombre_periodo || grupo.periodo;
+                const grado = nombreGrado(grupo);
+                const seccion = nombreSeccion(grupo);
+                const turno = nombreTurno(grupo);
                 return (
                   <option key={grupo.id_grupo} value={grupo.id_grupo}>
-                    {grado} '{seccion}' - {periodo}
+                    {grado} - Secc. {seccion} ({turno})
                   </option>
                 );
               })}

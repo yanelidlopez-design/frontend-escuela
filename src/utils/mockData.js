@@ -4,15 +4,19 @@
  */
 
 export const MOCK_GRUPOS = [
-  { id: 1, grado: "1er Año", seccion: "A", nivel: "Secundaria", tutor: "Prof. María Rodríguez", total_alumnos: 32 },
-  { id: 2, grado: "1er Año", seccion: "B", nivel: "Secundaria", tutor: "Prof. José Pérez", total_alumnos: 30 },
-  { id: 3, grado: "2do Año", seccion: "A", nivel: "Secundaria", tutor: "Prof. Carlos Gómez", total_alumnos: 28 },
-  { id: 4, grado: "2do Año", seccion: "B", nivel: "Secundaria", tutor: "Prof. Ana Martínez", total_alumnos: 29 },
-  { id: 5, grado: "3er Año", seccion: "A", nivel: "Secundaria", tutor: "Prof. Luis Fernández", total_alumnos: 31 },
-  { id: 6, grado: "4to Año", seccion: "A", nivel: "Secundaria", tutor: "Prof. Elena Torres", total_alumnos: 27 },
-  { id: 7, grado: "5to Año", seccion: "A", nivel: "Secundaria", tutor: "Prof. Roberto Silva", total_alumnos: 26 }
+  { id: 1, grado: "1er Grado", seccion: "A", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Ana Pérez", total_alumnos: 32 },
+  { id: 2, grado: "1er Grado", seccion: "B", turno: "Tarde", nivel: "Primaria", tutor: "Prof. Carlos Gómez", total_alumnos: 30 },
+  { id: 3, grado: "2do Grado", seccion: "A", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Marta López", total_alumnos: 28 },
+  { id: 4, grado: "2do Grado", seccion: "B", turno: "Tarde", nivel: "Primaria", tutor: "Prof. Luis Fernández", total_alumnos: 31 },
+  { id: 5, grado: "2do Grado", seccion: "C", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Héctor Plaza", total_alumnos: 30 },
+  { id: 6, grado: "3er Grado", seccion: "A", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Daniel Ortiz", total_alumnos: 27 },
+  { id: 7, grado: "3er Grado", seccion: "B", turno: "Tarde", nivel: "Primaria", tutor: "Prof. Camila Vásquez", total_alumnos: 26 },
+  { id: 8, grado: "4to Grado", seccion: "A", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Sofia Martinez", total_alumnos: 29 },
+  { id: 9, grado: "4to Grado", seccion: "B", turno: "Tarde", nivel: "Primaria", tutor: "Prof. Jorge Escalante", total_alumnos: 25 },
+  { id: 10, grado: "5to Grado", seccion: "A", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Mónica Castro", total_alumnos: 24 },
+  { id: 11, grado: "5to Grado", seccion: "B", turno: "Tarde", nivel: "Primaria", tutor: "Prof. Emilio Rojas", total_alumnos: 29 },
+  { id: 12, grado: "6to Grado", seccion: "Única", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Carla Ramírez", total_alumnos: 24 },
 ];
-
 export const MOCK_REPRESENTANTES = [
   {
     id_representante: 101,
