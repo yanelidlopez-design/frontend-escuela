@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, GraduationCap, CalendarCheck, LogOut, BookOpen, User, ClipboardList } from 'lucide-react';
+import { Users, CalendarCheck, LogOut, BookOpen, User, ClipboardList } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Sidebar = ({ activeTab, setActiveTab }) => {
@@ -7,7 +7,6 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
 
   const menuItems = [
     { id: 'personal', label: 'Personal con Cargo', icon: Users, endpoint: '/api/v1/personal/' },
-    { id: 'profesores', label: 'Profesores', icon: GraduationCap, endpoint: '/api/v1/profesores/' },
     { id: 'alumnos', label: 'Alumnos', icon: User, endpoint: '/api/academico/alumnos/' },
     { id: 'inscripciones', label: 'Inscripciones', icon: ClipboardList, endpoint: '/api/academico/inscripciones/' },
     { id: 'asistencias', label: 'Control de Asistencias', icon: CalendarCheck, endpoint: '/api/v1/academico/asistencias/' },

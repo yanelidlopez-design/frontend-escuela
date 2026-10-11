@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { alumnosApi } from '../api/alumnosApi';
+import { coreApi } from '../api/coreApi';
+import { gruposApi } from '../api/gruposApi';
+import { personalApi } from '../api/personalApi';
+import { extraerMensajeError } from '../utils/errorUtils';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
-import { Plus, Search, Edit2, Trash2, Users, RefreshCw, GraduationCap } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, RefreshCw, FileText } from 'lucide-react';
+
+// Tallas de uniforme escolar infantiles (4 a 12) para camisa y pantalón.
+const TALLAS_UNIFORME = ['4', '5', '6', '7', '8', '9', '10', '11', '12'];
 
 export const Alumnos = () => {
   const [alumnos, setAlumnos] = useState([]);
+  const [grupos, setGrupos] = useState([]);
+  const [profesores, setProfesores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [grados, setGrados] = useState([]);
+  const [secciones, setSecciones] = useState([]);
+  const [grado, setGrado] = useState('');
+  const [seccion, setSeccion] = useState('');
   const [search, setSearch] = useState('');
   const [estatusFilter, setEstatusFilter] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,6 +50,14 @@ export const Alumnos = () => {
     tipo_discapacidad: '',
     fecha_inscripcion_inicial: '',
     estatus_general: 'Activo',
+    id_profesor_encargado: '',
+    id_grupo: '',
+    carnet_patria_codigo: '',
+    carnet_patria_serial: '',
+    numero_cuenta: '',
+    tipo_cuenta: '',
+    banco: '',
+    direccion: { calle: '', ciudad: '', estado: '', referencia: '' },
     representante: { cedula: '', nombre: '', telefono: '' },
     parentesco: ''
   });
@@ -45,7 +66,7 @@ export const Alumnos = () => {
     setLoading(true);
     try {
       const [alumnosData] = await Promise.all([
-        alumnosApi.getAll({ search, estatus_general: estatusFilter })
+        alumnosApi.getAll({ search, estatus_general: estatusFilter, grado, seccion })
       ]);
       setAlumnos(alumnosData);
     } catch (err) {
@@ -55,17 +76,57 @@ export const Alumnos = () => {
     }
   };
 
+  // Cargar catálogos de grados, secciones y grupos (una sola vez al montar el componente).
+  // El backend expone /core/grados/, /core/secciones/ y /academico/grupos/; las APIs aplican fallback a mocks offline.
+  useEffect(() => {
+    const loadOpciones = async () => {
+      try {
+        const [gradosData, seccionesData, gruposData, profesoresData] = await Promise.all([
+          coreApi.getGrados(),
+          coreApi.getSecciones(),
+          gruposApi.getAll(),
+          personalApi.getAll({})
+        ]);
+        setGrados(Array.isArray(gradosData) ? gradosData : []);
+        setSecciones(Array.isArray(seccionesData) ? seccionesData : []);
+        setGrupos(Array.isArray(gruposData) ? gruposData : []);
+        setProfesores(Array.isArray(profesoresData) ? profesoresData : []);
+      } catch (err) {
+        console.error('Error cargando grados/secciones/grupos:', err);
+      }
+    };
+    loadOpciones();
+  }, []);
+
+  // Recargar alumnos cuando cambian los filtros (grado/seccion se aplican en el backend).
+  /* eslint-disable react/set-state-in-effect, react-hooks/exhaustive-deps -- cargar al cambiar filtros; loadData se redefine cada render a propósito */
   useEffect(() => {
     loadData();
-  }, [search, estatusFilter]);
+  }, [search, estatusFilter, grado, seccion]);
+  /* eslint-enable react/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const handleOpenModal = (item = null) => {
     if (item) {
       setEditingItem(item);
       // Precarga del representante desde la API (alumno.representante / alumno.parentesco)
       const rep = item.representante || null;
+      // Precarga de la dirección desde el payload del serializer (direccion o direccion_detalle)
+      const dir = item.direccion || item.direccion_detalle || null;
       setFormData({
         ...item,
+        id_profesor_encargado: item.id_profesor_encargado ?? '',
+        id_grupo: item.grupo_inscripcion_id ?? '',
+        carnet_patria_codigo: item.carnet_patria_codigo || '',
+        carnet_patria_serial: item.carnet_patria_serial || '',
+        numero_cuenta: item.numero_cuenta || '',
+        tipo_cuenta: item.tipo_cuenta || '',
+        banco: item.banco || '',
+        direccion: {
+          calle: (dir && dir.calle) || '',
+          ciudad: (dir && dir.ciudad) || '',
+          estado: (dir && dir.estado) || '',
+          referencia: (dir && dir.referencia) || ''
+        },
         representante: {
           cedula: (rep && rep.cedula) || '',
           nombre: (rep && rep.nombre) || '',
@@ -100,6 +161,14 @@ export const Alumnos = () => {
         tipo_discapacidad: '',
         fecha_inscripcion_inicial: new Date().toISOString().split('T')[0],
         estatus_general: 'Activo',
+        id_profesor_encargado: '',
+        id_grupo: '',
+        carnet_patria_codigo: '',
+        carnet_patria_serial: '',
+        numero_cuenta: '',
+        tipo_cuenta: '',
+        banco: '',
+        direccion: { calle: '', ciudad: '', estado: '', referencia: '' },
         representante: { cedula: '', nombre: '', telefono: '' },
         parentesco: ''
       });
@@ -110,9 +179,19 @@ export const Alumnos = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // El representante viaja anidado junto a los campos del alumno en la raíz
-      const { representante, parentesco, ...camposAlumno } = formData;
+      // El representante y la dirección viajan anidados junto a los campos del alumno en la raíz
+      const { representante, parentesco, direccion, ...camposAlumno } = formData;
       const payload = { ...camposAlumno };
+      // Select vacío => sin profesor asignado (null); el backend espera el id numérico.
+      payload.id_profesor_encargado = payload.id_profesor_encargado
+        ? Number(payload.id_profesor_encargado)
+        : null;
+      // Grupo vacío => null (el backend no toca la inscripción activa si es null).
+      payload.id_grupo = payload.id_grupo ? Number(payload.id_grupo) : null;
+      // Dirección anidada solo si la calle tiene contenido (evita direcciones vacías).
+      if (direccion && direccion.calle && direccion.calle.trim()) {
+        payload.direccion = direccion;
+      }
       if (representante && representante.cedula && representante.cedula.trim()) {
         payload.representante = representante;
         payload.parentesco = parentesco;
@@ -126,13 +205,19 @@ export const Alumnos = () => {
       loadData();
     } catch (err) {
       console.error(err);
+      alert(`No se pudo guardar el alumno: ${extraerMensajeError(err)}`);
     }
   };
 
   const handleDelete = async (id) => {
     if (window.confirm('¿Está seguro de eliminar este registro de alumno?')) {
-      await alumnosApi.delete(id);
-      loadData();
+      try {
+        await alumnosApi.delete(id);
+        loadData();
+      } catch (err) {
+        console.error(err);
+        alert(`No se pudo eliminar el alumno: ${extraerMensajeError(err)}`);
+      }
     }
   };
 
@@ -142,6 +227,31 @@ export const Alumnos = () => {
 
   const getRepresentanteNombre = (item) => {
     return (item && item.representante && item.representante.nombre) || 'Sin asignar';
+  };
+
+  // Profesor encargado (Docente Guía) del alumno.
+  // 1) Backend real: el serializer ya envía item.profesor_encargado (grupo -> profesor_director).
+  // 2) Fallback offline: cruce local por grado+sección contra el catálogo de grupos (campo 'tutor').
+  const getProfesorEncargado = (item) => {
+    if (item && item.profesor_encargado) return item.profesor_encargado;
+
+    const grado = item?.grado_actual;
+    const seccion = item?.seccion_actual;
+    if (grado && seccion && grupos.length) {
+      const nombreG = (g) => g?.grado_detalle?.nombre_grado || g?.grado || '';
+      const nombreS = (g) => g?.seccion_detalle?.nombre_seccion || g?.seccion || '';
+      const grupo = grupos.find(
+        (g) => nombreG(g) === grado && nombreS(g) === seccion
+      );
+      if (grupo) {
+        const detalle = grupo.profesor_guia_detalle || grupo.profesor_director_detalle;
+        if (detalle) {
+          return `${detalle.primer_nombre || ''} ${detalle.primer_apellido || ''}`.trim();
+        }
+        if (grupo.tutor) return grupo.tutor;
+      }
+    }
+    return 'Sin asignar';
   };
 
   return (
@@ -194,6 +304,69 @@ export const Alumnos = () => {
         </select>
       </div>
 
+      {/* Filtros por Grado y Sección */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="form-group">
+          <label htmlFor="alumno-filter-grado">Grado</label>
+          <select
+            id="alumno-filter-grado"
+            className="form-select"
+            value={grado}
+            onChange={(e) => setGrado(e.target.value)}
+          >
+            <option value="">Todos los Grados</option>
+            {grados.map((g) => <option key={g.id_grado} value={g.id_grado}>{g.nombre_grado || 'Grado sin nombre'}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label htmlFor="alumno-filter-seccion">Sección</label>
+          <select
+            id="alumno-filter-seccion"
+            className="form-select"
+            value={seccion}
+            onChange={(e) => setSeccion(e.target.value)}
+          >
+            <option value="">Todas</option>
+            {secciones.map((s) => <option key={s.id_seccion} value={s.id_seccion}>{s.nombre_seccion || 'Sección sin nombre'}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+            onClick={() => {
+              alumnosApi.exportarExcel({ grado, seccion, estado: estatusFilter })
+                .catch(() => {});
+            }}
+          >
+            <FileText size={18} /> Exportar a Excel
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition-colors"
+            onClick={() => {
+              alumnosApi.exportarPdf({ grado, seccion, estado: estatusFilter })
+                .catch(() => {});
+            }}
+          >
+            <FileText size={18} /> Exportar a PDF
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+            onClick={() => {
+              alumnosApi.exportarCSV({ grado, seccion, estado: estatusFilter })
+                .catch(() => {});
+            }}
+          >
+            <FileText size={18} /> Exportar a CSV
+          </button>
+        </div>
+      </div>
+        
       {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -206,17 +379,18 @@ export const Alumnos = () => {
                 <th className="px-6 py-4">Género</th>
                 <th className="px-6 py-4">Representante</th>
                 <th className="px-6 py-4">Estatus</th>
+                <th className="px-6 py-4">Profesor Encargado</th>
                 <th className="px-6 py-4 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="text-center py-8 text-slate-400">Cargando datos de alumnos...</td>
+                  <td colSpan="8" className="text-center py-8 text-slate-400">Cargando datos de alumnos...</td>
                 </tr>
               ) : alumnos.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="text-center py-8 text-slate-400">No se encontraron alumnos registrados.</td>
+                  <td colSpan="8" className="text-center py-8 text-slate-400">No se encontraron alumnos registrados.</td>
                 </tr>
               ) : (
                 alumnos.map((item) => (
@@ -232,6 +406,7 @@ export const Alumnos = () => {
                     <td className="px-6 py-4">
                       <StatusBadge status={item.estatus_general} />
                     </td>
+                    <td className="px-6 py-4">{getProfesorEncargado(item)}</td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <button
                         onClick={() => handleOpenModal(item)}
@@ -440,12 +615,9 @@ export const Alumnos = () => {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
                 >
                   <option value="">Seleccionar...</option>
-                  <option value="XS">XS</option>
-                  <option value="S">S</option>
-                  <option value="M">M</option>
-                  <option value="L">L</option>
-                  <option value="XL">XL</option>
-                  <option value="XXL">XXL</option>
+                  {TALLAS_UNIFORME.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -456,14 +628,9 @@ export const Alumnos = () => {
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
                 >
                   <option value="">Seleccionar...</option>
-                  <option value="26">26</option>
-                  <option value="28">28</option>
-                  <option value="30">30</option>
-                  <option value="32">32</option>
-                  <option value="34">34</option>
-                  <option value="36">36</option>
-                  <option value="38">38</option>
-                  <option value="40">40</option>
+                  {TALLAS_UNIFORME.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -553,6 +720,177 @@ export const Alumnos = () => {
                   />
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-4">
+            <h4 className="text-sm font-semibold text-slate-800 mb-3">🏠 Dirección de Residencia</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Calle / Dirección</label>
+                <input
+                  type="text"
+                  value={formData.direccion.calle}
+                  onChange={(e) => setFormData({ ...formData, direccion: { ...formData.direccion, calle: e.target.value } })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="ej. Urb. Los Rosales, Casa #12"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Ciudad / Municipio</label>
+                  <input
+                    type="text"
+                    value={formData.direccion.ciudad}
+                    onChange={(e) => setFormData({ ...formData, direccion: { ...formData.direccion, ciudad: e.target.value } })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    placeholder="ej. Caracas"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Estado</label>
+                  <input
+                    type="text"
+                    value={formData.direccion.estado}
+                    onChange={(e) => setFormData({ ...formData, direccion: { ...formData.direccion, estado: e.target.value } })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    placeholder="ej. Miranda"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Referencia</label>
+                <input
+                  type="text"
+                  value={formData.direccion.referencia}
+                  onChange={(e) => setFormData({ ...formData, direccion: { ...formData.direccion, referencia: e.target.value } })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="ej. Portón negro, frente a la plaza"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-4">
+            <h4 className="text-sm font-semibold text-slate-800 mb-3">🪪 Carnet de la Patria</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Código</label>
+                <input
+                  type="text"
+                  value={formData.carnet_patria_codigo}
+                  onChange={(e) => setFormData({ ...formData, carnet_patria_codigo: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="ej. 1234567890123456"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Serial</label>
+                <input
+                  type="text"
+                  value={formData.carnet_patria_serial}
+                  onChange={(e) => setFormData({ ...formData, carnet_patria_serial: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="ej. ABC123456"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-4">
+            <h4 className="text-sm font-semibold text-slate-800 mb-3">💳 Registros Financieros</h4>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">N° de Cuenta</label>
+                <input
+                  type="text"
+                  value={formData.numero_cuenta}
+                  onChange={(e) => setFormData({ ...formData, numero_cuenta: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="ej. 01340123456789012345"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Tipo de Cuenta</label>
+                <select
+                  value={formData.tipo_cuenta}
+                  onChange={(e) => setFormData({ ...formData, tipo_cuenta: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="Ahorro">Ahorro</option>
+                  <option value="Corriente">Corriente</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Banco</label>
+                <input
+                  type="text"
+                  value={formData.banco}
+                  onChange={(e) => setFormData({ ...formData, banco: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="ej. Banco de Venezuela"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-4">
+            <h4 className="text-sm font-semibold text-slate-800 mb-3">🎓 Asignación Académica</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Grupo Académico</label>
+                <select
+                  value={formData.id_grupo ?? ''}
+                  onChange={(e) => {
+                    const gid = e.target.value;
+                    // Autocompletar el profesor del grupo (docente guía) si el grupo tiene director.
+                    const grupoSel = grupos.find((g) => String(g.id_grupo ?? g.id) === gid);
+                    const profId =
+                      grupoSel?.profesor_director ??
+                      grupoSel?.profesor_guia_detalle?.id_profesor ??
+                      '';
+                    setFormData({
+                      ...formData,
+                      id_grupo: gid,
+                      id_profesor_encargado: profId || formData.id_profesor_encargado || '',
+                    });
+                  }}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                >
+                  <option value="">Sin asignar</option>
+                  {grupos.map((g) => {
+                    const gid = g.id_grupo ?? g.id;
+                    const grado = g?.grado_detalle?.nombre_grado || g?.grado || '';
+                    const seccion = g?.seccion_detalle?.nombre_seccion || g?.seccion || '';
+                    const turno = g?.turno_detalle?.nombre_turno || g?.turno || '';
+                    return (
+                      <option key={gid} value={gid}>
+                        {grado} - Secc. {seccion}{turno ? ` (${turno})` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Profesor Encargado (Docente Guía)</label>
+                <select
+                  value={formData.id_profesor_encargado ?? ''}
+                  onChange={(e) => setFormData({ ...formData, id_profesor_encargado: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                >
+                  <option value="">Sin asignar</option>
+                  {profesores.map((p) => {
+                    const pid = p.id_profesor ?? p.id;
+                    return (
+                      <option key={pid} value={pid}>
+                        {[p.primer_nombre, p.primer_apellido].filter(Boolean).join(' ')}
+                        {p.categoria ? ` — ${p.categoria}` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
             </div>
           </div>
 

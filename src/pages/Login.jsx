@@ -17,9 +17,15 @@ export const Login = () => {
     try {
       await login(username, password);
     } catch (err) {
-      setError(
-        err.response?.data?.detail || 'Credenciales inválidas. Verifique su usuario y contraseña.'
-      );
+      let mensaje = 'Credenciales incorrectas.';
+      if (err.code === 'ERR_NETWORK' || err.message?.includes('Network') || err.request) {
+        mensaje = 'No se pudo conectar con el servidor central.';
+      } else if (err.response?.status === 401) {
+        mensaje = 'Credenciales incorrectas.';
+      } else if (err.response?.data?.detail) {
+        mensaje = err.response.data.detail;
+      }
+      setError(mensaje);
     } finally {
       setLoading(false);
     }

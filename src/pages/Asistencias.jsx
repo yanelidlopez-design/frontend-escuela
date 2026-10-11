@@ -108,6 +108,7 @@ export const Asistencias = () => {
         nombreSeccion(g) === seccionSel &&
         (turnoSel === '' || nombreTurno(g) === turnoSel)
     );
+    // eslint-disable-next-line react/set-state-in-effect -- deriva el grupo activo desde los filtros Grado+Sección+Turno
     setGrupoActivo(grupo || null);
   }, [grupos, gradoSel, seccionSel, turnoSel]);
 
@@ -151,6 +152,7 @@ export const Asistencias = () => {
   }, [grupoActivo, fecha]);
 
   useEffect(() => {
+    // eslint-disable-next-line react/set-state-in-effect -- sincroniza el listado con el grupo y la fecha seleccionados
     cargarListado();
   }, [grupoActivo, fecha, cargarListado]);
 

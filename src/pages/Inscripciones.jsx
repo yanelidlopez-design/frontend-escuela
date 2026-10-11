@@ -2,28 +2,40 @@ import React, { useState, useEffect } from 'react';
 import { inscripcionesApi } from '../api/inscripcionesApi';
 import { alumnosApi } from '../api/alumnosApi';
 import { gruposApi } from '../api/gruposApi';
-import { StatusBadge } from '../components/StatusBadge';
+import { personalApi } from '../api/personalApi';
+import { coreApi } from '../api/coreApi';
+import { extraerMensajeError } from '../utils/errorUtils';
 import { Modal } from '../components/Modal';
-import { Plus, Search, Edit2, Trash2, BookOpen, RefreshCw, Calendar } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, RefreshCw, FileSpreadsheet, FileText, Download } from 'lucide-react';
 
 const nombreGrado = (g) => g?.grado_detalle?.nombre_grado || (typeof g?.grado === 'string' ? g.grado : '');
 const nombreSeccion = (g) => g?.seccion_detalle?.nombre_seccion || (typeof g?.seccion === 'string' ? g.seccion : '');
 const nombreTurno = (g) => g?.turno_detalle?.nombre_turno || (typeof g?.turno === 'string' ? g.turno : '');
+
+// Tallas de uniforme escolar infantiles (4 a 12) para camisa y pantalón.
+const TALLAS_UNIFORME = ['4', '5', '6', '7', '8', '9', '10', '11', '12'];
 
 
 export const Inscripciones = () => {
   const [inscripciones, setInscripciones] = useState([]);
   const [alumnos, setAlumnos] = useState([]);
   const [grupos, setGrupos] = useState([]);
+  const [profesores, setProfesores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
+  const [gradoFilter, setGradoFilter] = useState('');
+  const [seccionFilter, setSeccionFilter] = useState('');
+  const [grados, setGrados] = useState([]);
+  const [secciones, setSecciones] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
   const [formData, setFormData] = useState({
     alumno: '',
     grupo: '',
+    profesor_encargado: '',
+    // eslint-disable-next-line react/purity -- valor inicial del form con la fecha de hoy (impuro solo en el primer render del estado)
     fecha_inscripcion: new Date().toISOString().split('T')[0],
     estado_inscripcion: 'Activa',
     monto_pago: '',
@@ -52,6 +64,12 @@ export const Inscripciones = () => {
       condicion_fisica: '',
       discapacidad: false,
       tipo_discapacidad: '',
+      carnet_patria_codigo: '',
+      carnet_patria_serial: '',
+      numero_cuenta: '',
+      tipo_cuenta: '',
+      banco: '',
+      direccion: { calle: '', ciudad: '', estado: '', referencia: '' },
       representante: { cedula: '', nombre: '', telefono: '' },
       parentesco: ''
     }
@@ -60,14 +78,16 @@ export const Inscripciones = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [inscripcionesData, alumnosData, gruposData] = await Promise.all([
-        inscripcionesApi.getAll({ search, estado_inscripcion: estadoFilter }),
+      const [inscripcionesData, alumnosData, gruposData, profesoresData] = await Promise.all([
+        inscripcionesApi.getAll({ search, estado_inscripcion: estadoFilter, grado: gradoFilter, seccion: seccionFilter }),
         alumnosApi.getAll(),
-        gruposApi.getAll()
+        gruposApi.getAll(),
+        personalApi.getAll({ categoria: 'Profesor' })
       ]);
       setInscripciones(inscripcionesData);
       setAlumnos(alumnosData);
       setGrupos(gruposData);
+      setProfesores(Array.isArray(profesoresData) ? profesoresData : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -75,9 +95,30 @@ export const Inscripciones = () => {
     }
   };
 
+  /* eslint-disable react/set-state-in-effect, react-hooks/exhaustive-deps -- cargar al cambiar filtros; loadData se redefine cada render a propósito */
   useEffect(() => {
     loadData();
-  }, [search, estadoFilter]);
+  }, [search, estadoFilter, gradoFilter, seccionFilter]);
+  /* eslint-enable react/set-state-in-effect, react-hooks/exhaustive-deps */
+
+  // Catálogos de grados y secciones (una sola vez al montar) para filtros y exportación.
+  /* eslint-disable react/set-state-in-effect -- catálogo estático al montar */
+  useEffect(() => {
+    const loadCatalogos = async () => {
+      try {
+        const [gradosData, seccionesData] = await Promise.all([
+          coreApi.getGrados(),
+          coreApi.getSecciones()
+        ]);
+        setGrados(Array.isArray(gradosData) ? gradosData : []);
+        setSecciones(Array.isArray(seccionesData) ? seccionesData : []);
+      } catch (err) {
+        console.error('Error cargando grados/secciones:', err);
+      }
+    };
+    loadCatalogos();
+  }, []);
+  /* eslint-enable react/set-state-in-effect */
 
   const handleOpenModal = (item = null) => {
     if (item) {
@@ -85,6 +126,7 @@ export const Inscripciones = () => {
       setFormData({
         alumno: item.alumno_id || item.alumno,
         grupo: item.grupo_id || item.grupo,
+        profesor_encargado: item.profesor_encargado || '',
         fecha_inscripcion: item.fecha_inscripcion ? item.fecha_inscripcion.split('T')[0] : new Date().toISOString().split('T')[0],
         estado_inscripcion: item.estado_inscripcion,
         monto_pago: item.monto_pago || '',
@@ -113,6 +155,12 @@ export const Inscripciones = () => {
           condicion_fisica: '',
           discapacidad: false,
           tipo_discapacidad: '',
+          carnet_patria_codigo: '',
+          carnet_patria_serial: '',
+          numero_cuenta: '',
+          tipo_cuenta: '',
+          banco: '',
+          direccion: { calle: '', ciudad: '', estado: '', referencia: '' },
           representante: { cedula: '', nombre: '', telefono: '' },
           parentesco: ''
         }
@@ -122,6 +170,7 @@ export const Inscripciones = () => {
       setFormData({
         alumno: '',
         grupo: '',
+        profesor_encargado: '',
         fecha_inscripcion: new Date().toISOString().split('T')[0],
         estado_inscripcion: 'Activa',
         monto_pago: '',
@@ -150,6 +199,12 @@ export const Inscripciones = () => {
           condicion_fisica: '',
           discapacidad: false,
           tipo_discapacidad: '',
+          carnet_patria_codigo: '',
+          carnet_patria_serial: '',
+          numero_cuenta: '',
+          tipo_cuenta: '',
+          banco: '',
+          direccion: { calle: '', ciudad: '', estado: '', referencia: '' },
           representante: { cedula: '', nombre: '', telefono: '' },
           parentesco: ''
         }
@@ -162,13 +217,16 @@ export const Inscripciones = () => {
     e.preventDefault();
     try {
       if (formData.crearNuevoAlumno) {
-        // Construir payload del alumno; el representante viaja anidado (opcional)
-        const { representante, parentesco, ...camposAlumno } = formData.nuevoAlumno;
+        // Construir payload del alumno; representante y dirección viajan anidados (opcionales)
+        const { representante, parentesco, direccion, ...camposAlumno } = formData.nuevoAlumno;
         const payloadAlumno = {
           ...camposAlumno,
           fecha_inscripcion_inicial: formData.fecha_inscripcion,
           estatus_general: 'Activo'
         };
+        if (direccion && direccion.calle && direccion.calle.trim()) {
+          payloadAlumno.direccion = direccion;
+        }
         if (representante && representante.cedula && representante.cedula.trim()) {
           payloadAlumno.representante = representante;
           payloadAlumno.parentesco = parentesco;
@@ -181,6 +239,7 @@ export const Inscripciones = () => {
         const payload = {
           alumno: nuevoAlumno.id_alumno,
           grupo: formData.grupo,
+          profesor_encargado: formData.profesor_encargado || null,
           fecha_inscripcion: formData.fecha_inscripcion ? `${formData.fecha_inscripcion}T09:00:00` : null,
           estado_inscripcion: formData.estado_inscripcion,
           monto_pago: formData.monto_pago,
@@ -193,6 +252,7 @@ export const Inscripciones = () => {
         const payload = {
           alumno: formData.alumno,
           grupo: formData.grupo,
+          profesor_encargado: formData.profesor_encargado || null,
           fecha_inscripcion: formData.fecha_inscripcion ? `${formData.fecha_inscripcion}T09:00:00` : null,
           estado_inscripcion: formData.estado_inscripcion,
           monto_pago: formData.monto_pago,
@@ -209,6 +269,7 @@ export const Inscripciones = () => {
       loadData();
     } catch (err) {
       console.error(err);
+      alert(`No se pudo guardar la inscripción: ${extraerMensajeError(err)}`);
     }
   };
 
@@ -253,6 +314,55 @@ export const Inscripciones = () => {
       };
     }
     return { grado: '-', seccion: '-', periodo: '-' };
+  };
+
+  // Nombre completo de un profesor a partir de su id (id_profesor del backend).
+  const nombreProfesor = (profesorId) => {
+    if (!profesorId) return '';
+    const p = profesores.find(
+      pr => (pr.id_profesor ?? pr.id) === profesorId
+    );
+    if (p) {
+      return `${p.primer_nombre || ''} ${p.segundo_nombre || ''} ${p.primer_apellido || ''} ${p.segundo_apellido || ''}`.replace(/\s+/g, ' ').trim();
+    }
+    return '';
+  };
+
+  // Nombre completo del docente guía de un grupo.
+  // Backend real -> grupo.profesor_guia_detalle; mock offline -> grupo.tutor.
+  const getProfesorDelGrupo = (grupoId) => {
+    const grupo = grupos.find(g => (g.id_grupo ?? g.id) === grupoId);
+    if (!grupo) return '';
+    const detalle = grupo.profesor_guia_detalle || grupo.profesor_director_detalle || null;
+    if (detalle) {
+      const idProf = detalle.id_profesor ?? detalle.id;
+      return nombreProfesor(idProf) ||
+        `${detalle.primer_nombre || ''} ${detalle.primer_apellido || ''}`.trim();
+    }
+    // Fallback offline: los grupos mock guardan el docente en 'tutor'
+    if (grupo.tutor) return grupo.tutor;
+    return '';
+  };
+
+  // Resuelve el ID del docente guía del grupo para preseleccionarlo en el formulario.
+  // Intenta cruzarlo con el catálogo 'profesores' (por id o por nombre del tutor mock).
+  const resolverProfesorIdDelGrupo = (grupoId) => {
+    const grupo = grupos.find(g => (g.id_grupo ?? g.id) === grupoId);
+    if (!grupo) return '';
+    const detalle = grupo.profesor_guia_detalle || grupo.profesor_director_detalle || null;
+    if (detalle) {
+      const idProf = detalle.id_profesor ?? detalle.id;
+      return idProf || '';
+    }
+    // Fallback offline: emparejar el nombre 'tutor' con el catálogo de profesores
+    if (grupo.tutor) {
+      const match = profesores.find(p => {
+        const nombre = `${p.primer_nombre || ''} ${p.primer_apellido || ''}`.trim();
+        return grupo.tutor.includes(nombre) || nombre.includes(grupo.tutor);
+      });
+      return match ? (match.id_profesor ?? match.id) : '';
+    }
+    return '';
   };
 
   const formatMonto = (monto) => {
@@ -321,6 +431,67 @@ export const Inscripciones = () => {
           <option value="Retirado">Retirado</option>
           <option value="Graduado">Graduado</option>
         </select>
+        <select
+          value={gradoFilter}
+          onChange={(e) => setGradoFilter(e.target.value)}
+          className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+        >
+          <option value="">Todos los grados</option>
+          {grados.map((g) => (
+            <option key={g.id_grado} value={g.id_grado}>{g.nombre_grado}</option>
+          ))}
+        </select>
+        <select
+          value={seccionFilter}
+          onChange={(e) => setSeccionFilter(e.target.value)}
+          className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+        >
+          <option value="">Todas las secciones</option>
+          {secciones.map((s) => (
+            <option key={s.id_seccion} value={s.id_seccion}>{s.nombre_seccion}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Exportación (respeta los filtros activos: grados/secciones/estado/búsqueda) */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div className="text-sm text-slate-500">
+          <span className="font-semibold text-slate-700">Exportación:</span>
+          <span className="ml-2 text-xs text-slate-400">
+            {gradoFilter || seccionFilter || estadoFilter || search
+              ? 'con los filtros seleccionados en la vista'
+              : 'todas las inscripciones'}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => inscripcionesApi
+              .exportarExcel({ grado: gradoFilter, seccion: seccionFilter, estado_inscripcion: estadoFilter, search })
+              .catch(() => {})}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <FileSpreadsheet size={16} /> Excel
+          </button>
+          <button
+            type="button"
+            onClick={() => inscripcionesApi
+              .exportarPdf({ grado: gradoFilter, seccion: seccionFilter, estado_inscripcion: estadoFilter, search })
+              .catch(() => {})}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <FileText size={16} /> PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => inscripcionesApi
+              .exportarCSV({ grado: gradoFilter, seccion: seccionFilter, estado_inscripcion: estadoFilter, search })
+              .catch(() => {})}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <Download size={16} /> CSV
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -605,12 +776,9 @@ export const Inscripciones = () => {
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     >
                       <option value="">Seleccionar...</option>
-                      <option value="XS">XS</option>
-                      <option value="S">S</option>
-                      <option value="M">M</option>
-                      <option value="L">L</option>
-                      <option value="XL">XL</option>
-                      <option value="XXL">XXL</option>
+                      {TALLAS_UNIFORME.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -621,14 +789,9 @@ export const Inscripciones = () => {
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
                     >
                       <option value="">Seleccionar...</option>
-                      <option value="26">26</option>
-                      <option value="28">28</option>
-                      <option value="30">30</option>
-                      <option value="32">32</option>
-                      <option value="34">34</option>
-                      <option value="36">36</option>
-                      <option value="38">38</option>
-                      <option value="40">40</option>
+                      {TALLAS_UNIFORME.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -719,6 +882,118 @@ export const Inscripciones = () => {
               </div>
 
               <div className="border-b border-slate-200 pb-4">
+                <h4 className="text-sm font-semibold text-slate-800 mb-3">🏠 Dirección de Residencia</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Calle / Dirección</label>
+                    <input
+                      type="text"
+                      value={formData.nuevoAlumno.direccion.calle}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, direccion: { ...formData.nuevoAlumno.direccion, calle: e.target.value } } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. Urb. Los Rosales, Casa #12"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Ciudad / Municipio</label>
+                      <input
+                        type="text"
+                        value={formData.nuevoAlumno.direccion.ciudad}
+                        onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, direccion: { ...formData.nuevoAlumno.direccion, ciudad: e.target.value } } })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                        placeholder="ej. Caracas"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Estado</label>
+                      <input
+                        type="text"
+                        value={formData.nuevoAlumno.direccion.estado}
+                        onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, direccion: { ...formData.nuevoAlumno.direccion, estado: e.target.value } } })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                        placeholder="ej. Miranda"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Referencia</label>
+                    <input
+                      type="text"
+                      value={formData.nuevoAlumno.direccion.referencia}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, direccion: { ...formData.nuevoAlumno.direccion, referencia: e.target.value } } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. Portón negro, frente a la plaza"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b border-slate-200 pb-4">
+                <h4 className="text-sm font-semibold text-slate-800 mb-3">🪪 Carnet de la Patria</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Código</label>
+                    <input
+                      type="text"
+                      value={formData.nuevoAlumno.carnet_patria_codigo}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, carnet_patria_codigo: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. 1234567890123456"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Serial</label>
+                    <input
+                      type="text"
+                      value={formData.nuevoAlumno.carnet_patria_serial}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, carnet_patria_serial: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. ABC123456"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b border-slate-200 pb-4">
+                <h4 className="text-sm font-semibold text-slate-800 mb-3">💳 Registros Financieros</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">N° de Cuenta</label>
+                    <input
+                      type="text"
+                      value={formData.nuevoAlumno.numero_cuenta}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, numero_cuenta: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. 01340123456789012345"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Tipo de Cuenta</label>
+                    <select
+                      value={formData.nuevoAlumno.tipo_cuenta}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, tipo_cuenta: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="Ahorro">Ahorro</option>
+                      <option value="Corriente">Corriente</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Banco</label>
+                    <input
+                      type="text"
+                      value={formData.nuevoAlumno.banco}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, banco: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. Banco de Venezuela"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b border-slate-200 pb-4">
                 <h4 className="text-sm font-semibold text-slate-800 mb-3">👨‍👩‍👧 Datos del Representante Legal</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -794,21 +1069,34 @@ export const Inscripciones = () => {
             </div>
           )}
 
+          <div className="border-t border-slate-200 pt-4">
+            <h4 className="text-sm font-semibold text-slate-800 mb-3">🏫 Grupo y Docente Encargado</h4>
+            <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Grupo Académico</label>
             <select
               required
               value={formData.grupo}
-              onChange={(e) => setFormData({ ...formData, grupo: e.target.value })}
+              onChange={(e) => {
+                const grupoId = e.target.value;
+                const profId = resolverProfesorIdDelGrupo(grupoId);
+                setFormData({
+                  ...formData,
+                  grupo: grupoId,
+                  profesor_encargado: profId || formData.profesor_encargado || ''
+                });
+              }}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             >
               <option value="">Seleccionar grupo...</option>
               {grupos.map((grupo) => {
+                // Normaliza el id: backend real usa id_grupo; mock offline usa id.
+                const grupoId = grupo.id_grupo ?? grupo.id;
                 const grado = nombreGrado(grupo);
                 const seccion = nombreSeccion(grupo);
                 const turno = nombreTurno(grupo);
                 return (
-                  <option key={grupo.id_grupo} value={grupo.id_grupo}>
+                  <option key={grupoId} value={grupoId}>
                     {grado} - Secc. {seccion} ({turno})
                   </option>
                 );
@@ -816,6 +1104,40 @@ export const Inscripciones = () => {
             </select>
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+              Profesor Encargado
+            </label>
+            {/* Derivado automáticamente del grupo seleccionado (docente guía de la sección).
+                En modo offline se resuelve cruzando con el catálogo de personal filtrado por 'Profesor'. */}
+            <select
+              required
+              value={formData.profesor_encargado || ''}
+              onChange={(e) => setFormData({ ...formData, profesor_encargado: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:bg-slate-100 disabled:text-slate-500"
+              disabled={!formData.grupo}
+            >
+              <option value="">
+                {formData.grupo ? 'Seleccionar profesor...' : 'Primero seleccione un grupo...'}
+              </option>
+              {profesores.map((profesor) => (
+                <option key={profesor.id_profesor ?? profesor.id} value={profesor.id_profesor ?? profesor.id}>
+                  {`${profesor.primer_nombre || ''} ${profesor.segundo_nombre || ''} ${profesor.primer_apellido || ''} ${profesor.segundo_apellido || ''}`.replace(/\s+/g, ' ').trim()}
+                  {profesor.especialidad ? ` — ${profesor.especialidad}` : ''}
+                </option>
+              ))}
+            </select>
+            {formData.grupo && getProfesorDelGrupo(formData.grupo) && (
+              <p className="mt-1 text-xs text-slate-500">
+                Docente guía de esta sección: <span className="font-medium text-slate-700">{getProfesorDelGrupo(formData.grupo)}</span>
+              </p>
+            )}
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-4">
+            <h4 className="text-sm font-semibold text-slate-800 mb-3">📝 Detalles de la Inscripción</h4>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Fecha Inscripción</label>
@@ -842,7 +1164,7 @@ export const Inscripciones = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Monto Pago</label>
               <input
@@ -864,6 +1186,7 @@ export const Inscripciones = () => {
                 placeholder="BOD-2024-XXX"
               />
             </div>
+          </div>
           </div>
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">

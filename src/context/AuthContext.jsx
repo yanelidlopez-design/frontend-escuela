@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const handleUnauthorized = () => {
+      // eslint-disable-next-line react/immutability -- logout se declara más abajo (const); el listener solo se dispara post-montaje
       logout();
     };
 
@@ -43,4 +44,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react/only-export-components -- useAuth comparte módulo con AuthProvider (patrón Context estándar de React)
 export const useAuth = () => useContext(AuthContext);

@@ -4,11 +4,15 @@
  */
 
 export const MOCK_GRUPOS = [
+  { id: 13, grado: "Inicial 1", seccion: "A", turno: "Mañana", nivel: "Preescolar", tutor: "Prof. Laura Mendoza", total_alumnos: 18 },
+  { id: 14, grado: "Inicial 2", seccion: "A", turno: "Mañana", nivel: "Preescolar", tutor: "Prof. Andrea Silva", total_alumnos: 20 },
+  { id: 15, grado: "Inicial 3", seccion: "A", turno: "Tarde", nivel: "Preescolar", tutor: "Prof. Rosa Aguilar", total_alumnos: 22 },
+
   { id: 1, grado: "1er Grado", seccion: "A", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Ana Pérez", total_alumnos: 32 },
   { id: 2, grado: "1er Grado", seccion: "B", turno: "Tarde", nivel: "Primaria", tutor: "Prof. Carlos Gómez", total_alumnos: 30 },
   { id: 3, grado: "2do Grado", seccion: "A", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Marta López", total_alumnos: 28 },
   { id: 4, grado: "2do Grado", seccion: "B", turno: "Tarde", nivel: "Primaria", tutor: "Prof. Luis Fernández", total_alumnos: 31 },
-  { id: 5, grado: "2do Grado", seccion: "C", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Héctor Plaza", total_alumnos: 30 },
+  { id: 5, grado: "2do Grado", seccion: "C", turno: "Tarde", nivel: "Primaria", tutor: "Prof. Héctor Plaza", total_alumnos: 30 },
   { id: 6, grado: "3er Grado", seccion: "A", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Daniel Ortiz", total_alumnos: 27 },
   { id: 7, grado: "3er Grado", seccion: "B", turno: "Tarde", nivel: "Primaria", tutor: "Prof. Camila Vásquez", total_alumnos: 26 },
   { id: 8, grado: "4to Grado", seccion: "A", turno: "Mañana", nivel: "Primaria", tutor: "Prof. Sofia Martinez", total_alumnos: 29 },
@@ -337,7 +341,8 @@ export const MOCK_PROFESORES = [
     telefono: "+58 414-9998877",
     fecha_ingreso: "2015-09-01",
     estatus: "Activo",
-    usuario: MOCK_USUARIOS[0]
+    usuario: MOCK_USUARIOS[0],
+    categoria: "Profesor"
   },
   {
     id_profesor: 2,
@@ -351,7 +356,8 @@ export const MOCK_PROFESORES = [
     telefono: "+58 424-3332211",
     fecha_ingreso: "2018-01-15",
     estatus: "Activo",
-    usuario: MOCK_USUARIOS[1]
+    usuario: MOCK_USUARIOS[1],
+    categoria: "Profesor"
   },
   {
     id_profesor: 3,
@@ -365,7 +371,8 @@ export const MOCK_PROFESORES = [
     telefono: "+58 412-1110099",
     fecha_ingreso: "2020-09-01",
     estatus: "Activo",
-    usuario: MOCK_USUARIOS[2]
+    usuario: MOCK_USUARIOS[2],
+    categoria: "Directivo"
   },
   {
     id_profesor: 4,
@@ -379,7 +386,8 @@ export const MOCK_PROFESORES = [
     telefono: "+58 416-4445566",
     fecha_ingreso: "2016-10-01",
     estatus: "Activo",
-    usuario: null
+    usuario: null,
+    categoria: "Personal de Apoyo"
   },
   {
     id_profesor: 5,
@@ -393,7 +401,53 @@ export const MOCK_PROFESORES = [
     telefono: "+58 414-0001122",
     fecha_ingreso: "2010-09-01",
     estatus: "Activo",
-    usuario: MOCK_USUARIOS[3]
+    usuario: MOCK_USUARIOS[3],
+    categoria: "Administrativo"
+  },
+  {
+    id_profesor: 6,
+    cedula: "V-15444555",
+    primer_nombre: "Laura",
+    segundo_nombre: "Sofía",
+    primer_apellido: "Mendoza",
+    segundo_apellido: "Rivas",
+    especialidad: "Educación Inicial",
+    cargo_departamento: "Docente Guía - Inicial 1",
+    telefono: "+58 414-7788123",
+    fecha_ingreso: "2019-09-01",
+    estatus: "Activo",
+    usuario: null,
+    categoria: "Profesor"
+  },
+  {
+    id_profesor: 7,
+    cedula: "V-17222333",
+    primer_nombre: "Andrea",
+    segundo_nombre: "Carolina",
+    primer_apellido: "Silva",
+    segundo_apellido: "Mora",
+    especialidad: "Educación Inicial",
+    cargo_departamento: "Docente Guía - Inicial 2",
+    telefono: "+58 424-6655004",
+    fecha_ingreso: "2020-01-15",
+    estatus: "Activo",
+    usuario: null,
+    categoria: "Profesor"
+  },
+  {
+    id_profesor: 8,
+    cedula: "V-19123456",
+    primer_nombre: "Rosa",
+    segundo_nombre: "Elena",
+    primer_apellido: "Aguilar",
+    segundo_apellido: "Contreras",
+    especialidad: "Educación Inicial",
+    cargo_departamento: "Docente Guía - Inicial 3",
+    telefono: "+58 412-5544661",
+    fecha_ingreso: "2017-10-01",
+    estatus: "Activo",
+    usuario: null,
+    categoria: "Profesor"
   }
 ];
 

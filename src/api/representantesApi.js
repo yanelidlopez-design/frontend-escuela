@@ -8,7 +8,7 @@ export const representantesApi = {
     try {
       const response = await axiosClient.get('/personal/representantes/', { params });
       return response.data.results || response.data;
-    } catch (error) {
+    } catch {
       console.warn('API /personal/representantes/ fallback to local store');
       let filtered = [...localRepresentantesStore];
       if (params.search) {
@@ -28,7 +28,7 @@ export const representantesApi = {
     try {
       const response = await axiosClient.get(`/personal/representantes/${id}/`);
       return response.data;
-    } catch (error) {
+    } catch {
       return localRepresentantesStore.find(p => p.id === Number(id));
     }
   },
@@ -37,7 +37,7 @@ export const representantesApi = {
     try {
       const response = await axiosClient.post('/personal/representantes/', data);
       return response.data;
-    } catch (error) {
+    } catch {
       const newItem = { id: Date.now(), ...data };
       localRepresentantesStore.unshift(newItem);
       return newItem;
@@ -62,7 +62,7 @@ export const representantesApi = {
     try {
       await axiosClient.delete(`/personal/representantes/${id}/`);
       return true;
-    } catch (error) {
+    } catch {
       localRepresentantesStore = localRepresentantesStore.filter(p => p.id !== Number(id));
       return true;
     }

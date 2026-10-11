@@ -8,7 +8,7 @@ export const asistenciasApi = {
     try {
       const response = await axiosClient.get('/academico/asistencias/', { params });
       return response.data.results || response.data;
-    } catch (error) {
+    } catch {
       console.warn('API /academico/asistencias/ fallback to local store');
       let filtered = [...localAsistenciasStore];
 
@@ -34,7 +34,7 @@ export const asistenciasApi = {
     try {
       const response = await axiosClient.get(`/academico/asistencias/${id}/`);
       return response.data;
-    } catch (error) {
+    } catch {
       return localAsistenciasStore.find(a => a.id === Number(id));
     }
   },
@@ -43,7 +43,7 @@ export const asistenciasApi = {
     try {
       const response = await axiosClient.post('/academico/asistencias/', data);
       return response.data;
-    } catch (error) {
+    } catch {
       const newItem = { id: Date.now(), ...data };
       localAsistenciasStore.unshift(newItem);
       return newItem;
@@ -68,7 +68,7 @@ export const asistenciasApi = {
     try {
       await axiosClient.delete(`/academico/asistencias/${id}/`);
       return true;
-    } catch (error) {
+    } catch {
       localAsistenciasStore = localAsistenciasStore.filter(a => a.id !== Number(id));
       return true;
     }

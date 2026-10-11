@@ -8,7 +8,7 @@ export const gruposApi = {
     try {
       const response = await axiosClient.get('/academico/grupos/', { params });
       return response.data.results || response.data;
-    } catch (error) {
+    } catch {
       console.warn('API /academico/grupos/ fallback to local store');
       let filtered = [...localGruposStore];
       if (params.periodo) {
@@ -52,7 +52,7 @@ export const gruposApi = {
     try {
       const response = await axiosClient.get(`/academico/grupos/${id}/`);
       return response.data;
-    } catch (error) {
+    } catch {
       return localGruposStore.find(g => g.id_grupo === Number(id));
     }
   },
@@ -61,7 +61,7 @@ export const gruposApi = {
     try {
       const response = await axiosClient.post('/academico/grupos/', data);
       return response.data;
-    } catch (error) {
+    } catch {
       const newItem = { id_grupo: Date.now(), ...data };
       localGruposStore.unshift(newItem);
       return newItem;
@@ -86,7 +86,7 @@ export const gruposApi = {
     try {
       await axiosClient.delete(`/academico/grupos/${id}/`);
       return true;
-    } catch (error) {
+    } catch {
       localGruposStore = localGruposStore.filter(g => g.id_grupo !== Number(id));
       return true;
     }

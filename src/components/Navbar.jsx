@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, FileText, Globe } from 'lucide-react';
+import { FileText, Globe } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const Navbar = ({ title }) => {

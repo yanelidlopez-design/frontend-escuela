@@ -3,7 +3,7 @@ import axiosClient from './axiosClient';
 export const authApi = {
   login: async (username, password) => {
     try {
-      const response = await axiosClient.post('/core/token/', { username, password });
+      const response = await axiosClient.post('/token/', { username, password });
       if (response.data.access) {
         localStorage.setItem('access_token', response.data.access);
         if (response.data.refresh) {
@@ -11,19 +11,10 @@ export const authApi = {
         }
       }
       return response.data;
+    // eslint-disable-next-line eslint/no-useless-catch -- fail-closed intencional: se relanza para que la vista muestre el banner de error
     } catch (error) {
-      // Mock login fallback if backend isn't available
-      if (!error.response || error.code === 'ERR_NETWORK') {
-        console.warn('Backend endpoint no disponible. Modo demostración simulado.');
-        const mockResponse = {
-          access: 'mock-access-token-jwt-example-' + Date.now(),
-          refresh: 'mock-refresh-token-jwt-example-' + Date.now(),
-          user: { username, email: `${username}@escuela.edu`, role: 'Administrador' }
-        };
-        localStorage.setItem('access_token', mockResponse.access);
-        localStorage.setItem('refresh_token', mockResponse.refresh);
-        return mockResponse;
-      }
+      // Fail-closed: deniega acceso si el servidor no responde o las credenciales son incorrectas.
+      // La vista debe manejar el error y mostrar el banner visual indicado.
       throw error;
     }
   },
