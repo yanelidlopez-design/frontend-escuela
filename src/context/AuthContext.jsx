@@ -9,7 +9,10 @@ export const AuthProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : null;
   });
 
-  const [token, setToken] = useState(() => localStorage.getItem('access_token'));
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    // Check if refresh_token exists as a proxy for authentication
+    return !!localStorage.getItem('refresh_token');
+  });
 
   useEffect(() => {
     const handleUnauthorized = () => {
@@ -24,21 +27,34 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     const data = await authApi.login(username, password);
     const userData = data.user || { username, role: 'Administrador', email: `${username}@escuela.edu` };
-    
+
     setUser(userData);
-    setToken(data.access);
+    setIsAuthenticated(true);
     localStorage.setItem('user_data', JSON.stringify(userData));
     return data;
   };
 
-  const logout = () => {
-    authApi.logout();
+  const logout = async () => {
+    await authApi.logout();
     setUser(null);
-    setToken(null);
+    setIsAuthenticated(false);
+  };
+
+  const checkAuth = async () => {
+    try {
+      // Call a /me endpoint to verify authentication via HttpOnly cookie
+      // For now, we'll use the presence of refresh_token as a proxy
+      const hasRefreshToken = !!localStorage.getItem('refresh_token');
+      setIsAuthenticated(hasRefreshToken);
+      return hasRefreshToken;
+    } catch {
+      setIsAuthenticated(false);
+      return false;
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );

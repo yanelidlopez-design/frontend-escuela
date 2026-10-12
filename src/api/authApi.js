@@ -4,11 +4,9 @@ export const authApi = {
   login: async (username, password) => {
     try {
       const response = await axiosClient.post('/token/', { username, password });
-      if (response.data.access) {
-        localStorage.setItem('access_token', response.data.access);
-        if (response.data.refresh) {
-          localStorage.setItem('refresh_token', response.data.refresh);
-        }
+      // access_token is now set as HttpOnly cookie by the backend
+      if (response.data.refresh) {
+        localStorage.setItem('refresh_token', response.data.refresh);
       }
       return response.data;
     // eslint-disable-next-line eslint/no-useless-catch -- fail-closed intencional: se relanza para que la vista muestre el banner de error
@@ -24,8 +22,14 @@ export const authApi = {
     return response.data;
   },
 
-  logout: () => {
-    localStorage.removeItem('access_token');
+  logout: async () => {
+    try {
+      // Call backend logout endpoint to clear the HttpOnly cookie
+      await axiosClient.post('/core/logout/');
+    } catch (error) {
+      // Continue with cleanup even if backend call fails
+      console.error('Logout backend call failed:', error);
+    }
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_data');
   }

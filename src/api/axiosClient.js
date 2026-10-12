@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/'
+const BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/'
 
 const axiosClient = axios.create({
   baseURL: BASE_URL,
@@ -8,6 +8,7 @@ const axiosClient = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000,
+  withCredentials: true, // Enable cookies to be sent with requests
 });
 
 let isRefreshing = false;
@@ -24,13 +25,10 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// Interceptor de Peticiones: Adjuntar Bearer Token
+// Interceptor de Peticiones: No es necesario adjuntar Bearer Token manualmente
+// ya que la cookie HttpOnly se envía automáticamente con withCredentials=true
 axiosClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -55,8 +53,7 @@ axiosClient.interceptors.response.use(
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then((token) => {
-            originalRequest.headers['Authorization'] = `Bearer ${token}`;
+          .then(() => {
             return axiosClient(originalRequest);
           })
           .catch((err) => Promise.reject(err));
@@ -69,8 +66,8 @@ axiosClient.interceptors.response.use(
 
       if (!refreshToken) {
         isRefreshing = false;
-        localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_data');
         window.dispatchEvent(new Event('auth:unauthorized'));
         return Promise.reject(error);
       }
@@ -81,25 +78,20 @@ axiosClient.interceptors.response.use(
           refresh: refreshToken,
         });
 
-        const newAccessToken = response.data.access;
-        localStorage.setItem('access_token', newAccessToken);
-
+        // Backend should set the new access_token as HttpOnly cookie
         if (response.data.refresh) {
           localStorage.setItem('refresh_token', response.data.refresh);
         }
 
-        axiosClient.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
-        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-
-        processQueue(null, newAccessToken);
+        processQueue(null);
         isRefreshing = false;
 
         return axiosClient(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
         isRefreshing = false;
-        localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_data');
         window.dispatchEvent(new Event('auth:unauthorized'));
         return Promise.reject(refreshError);
       }
