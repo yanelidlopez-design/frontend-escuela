@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { alumnosApi } from '../api/alumnosApi';
-import { coreApi } from '../api/coreApi';
-import { gruposApi } from '../api/gruposApi';
-import { personalApi } from '../api/personalApi';
+import React, { useState } from 'react';
+import { useAlumnos } from '../hooks/useAlumnos';
 import { extraerMensajeError } from '../utils/errorUtils';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
@@ -12,16 +9,19 @@ import { Plus, Search, Edit2, Trash2, RefreshCw, FileText } from 'lucide-react';
 const TALLAS_UNIFORME = ['4', '5', '6', '7', '8', '9', '10', '11', '12'];
 
 export const Alumnos = () => {
-  const [alumnos, setAlumnos] = useState([]);
-  const [grupos, setGrupos] = useState([]);
-  const [profesores, setProfesores] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [grados, setGrados] = useState([]);
-  const [secciones, setSecciones] = useState([]);
-  const [grado, setGrado] = useState('');
-  const [seccion, setSeccion] = useState('');
-  const [search, setSearch] = useState('');
-  const [estatusFilter, setEstatusFilter] = useState('');
+  // Toda la lógica de estado, filtros, catálogos y HTTP vive en el hook (Misión 9)
+  const {
+    alumnos, loading, error, clearError,
+    grado, setGrado,
+    seccion, setSeccion,
+    search, setSearch,
+    estatusFilter, setEstatusFilter,
+    grados, secciones, grupos, profesores,
+    fetchAlumnos, handleCreate, handleUpdate, handleDelete,
+    exportarExcel, exportarPdf, exportarCSV,
+  } = useAlumnos();
+
+  // Estado puramente visual del modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
@@ -61,49 +61,6 @@ export const Alumnos = () => {
     representante: { cedula: '', nombre: '', telefono: '' },
     parentesco: ''
   });
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [alumnosData] = await Promise.all([
-        alumnosApi.getAll({ search, estatus_general: estatusFilter, grado, seccion })
-      ]);
-      setAlumnos(alumnosData);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Cargar catálogos de grados, secciones y grupos (una sola vez al montar el componente).
-  // El backend expone /core/grados/, /core/secciones/ y /academico/grupos/; las APIs aplican fallback a mocks offline.
-  useEffect(() => {
-    const loadOpciones = async () => {
-      try {
-        const [gradosData, seccionesData, gruposData, profesoresData] = await Promise.all([
-          coreApi.getGrados(),
-          coreApi.getSecciones(),
-          gruposApi.getAll(),
-          personalApi.getAll({})
-        ]);
-        setGrados(Array.isArray(gradosData) ? gradosData : []);
-        setSecciones(Array.isArray(seccionesData) ? seccionesData : []);
-        setGrupos(Array.isArray(gruposData) ? gruposData : []);
-        setProfesores(Array.isArray(profesoresData) ? profesoresData : []);
-      } catch (err) {
-        console.error('Error cargando grados/secciones/grupos:', err);
-      }
-    };
-    loadOpciones();
-  }, []);
-
-  // Recargar alumnos cuando cambian los filtros (grado/seccion se aplican en el backend).
-  /* eslint-disable react/set-state-in-effect, react-hooks/exhaustive-deps -- cargar al cambiar filtros; loadData se redefine cada render a propósito */
-  useEffect(() => {
-    loadData();
-  }, [search, estatusFilter, grado, seccion]);
-  /* eslint-enable react/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const handleOpenModal = (item = null) => {
     if (item) {
@@ -197,23 +154,22 @@ export const Alumnos = () => {
         payload.parentesco = parentesco;
       }
       if (editingItem) {
-        await alumnosApi.update(editingItem.id_alumno, payload);
+        await handleUpdate(editingItem.id_alumno, payload);
       } else {
-        await alumnosApi.create(payload);
+        await handleCreate(payload);
       }
       setIsModalOpen(false);
-      loadData();
     } catch (err) {
       console.error(err);
       alert(`No se pudo guardar el alumno: ${extraerMensajeError(err)}`);
     }
   };
 
-  const handleDelete = async (id) => {
+  // La confirmación es UI de la vista; la llamada HTTP y la recarga viven en el hook
+  const confirmarEliminar = async (id) => {
     if (window.confirm('¿Está seguro de eliminar este registro de alumno?')) {
       try {
-        await alumnosApi.delete(id);
-        loadData();
+        await handleDelete(id);
       } catch (err) {
         console.error(err);
         alert(`No se pudo eliminar el alumno: ${extraerMensajeError(err)}`);
@@ -264,7 +220,7 @@ export const Alumnos = () => {
         </div>
         <div className="flex items-center space-x-3">
           <button
-            onClick={loadData}
+            onClick={fetchAlumnos}
             className="p-2.5 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
             title="Recargar datos"
           >
@@ -337,36 +293,37 @@ export const Alumnos = () => {
           <button
             type="button"
             className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
-            onClick={() => {
-              alumnosApi.exportarExcel({ grado, seccion, estado: estatusFilter })
-                .catch(() => {});
-            }}
+            onClick={exportarExcel}
           >
             <FileText size={18} /> Exportar a Excel
           </button>
           <button
             type="button"
             className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition-colors"
-            onClick={() => {
-              alumnosApi.exportarPdf({ grado, seccion, estado: estatusFilter })
-                .catch(() => {});
-            }}
+            onClick={exportarPdf}
           >
             <FileText size={18} /> Exportar a PDF
           </button>
           <button
             type="button"
             className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
-            onClick={() => {
-              alumnosApi.exportarCSV({ grado, seccion, estado: estatusFilter })
-                .catch(() => {});
-            }}
+            onClick={exportarCSV}
           >
             <FileText size={18} /> Exportar a CSV
           </button>
         </div>
       </div>
         
+      {/* Banner de error global (provisto por useAlumnos) */}
+      {error && (
+        <div className="flex items-start justify-between gap-2 p-4 rounded-xl text-sm font-medium bg-rose-50 border border-rose-200 text-rose-700">
+          <span>⚠ {error}</span>
+          <button type="button" onClick={clearError} className="text-rose-400 hover:text-rose-700" title="Descartar">
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -416,7 +373,7 @@ export const Alumnos = () => {
                         <Edit2 size={16} />
                       </button>
                       <button
-                        onClick={() => handleDelete(item.id_alumno)}
+                        onClick={() => confirmarEliminar(item.id_alumno)}
                         className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
                         title="Eliminar"
                       >

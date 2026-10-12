@@ -1,6 +1,11 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { gruposApi } from '../api/gruposApi';
-import { asistenciasApi } from '../api/asistenciasApi';
+import React, { useMemo } from 'react';
+import {
+  useAsistencias,
+  nombreGrado,
+  nombreSeccion,
+  nombreTurno,
+  nombreAlumno,
+} from '../hooks/useAsistencias';
 import { exportToCSV, exportToExcel, exportToPDF } from '../utils/exportUtils';
 import {
   Calendar,
@@ -37,124 +42,32 @@ const ESTADOS = [
 
 const ETIQUETAS_ESTADO = { P: 'Presente', A: 'Ausente', J: 'Justificado' };
 
-// --- Normalización de grupos: backend real (FK + *_detalle) vs mock ---
-const nombreGrado = (g) =>
-  g?.grado_detalle?.nombre_grado || (typeof g?.grado === 'string' ? g.grado : '');
-const nombreSeccion = (g) =>
-  g?.seccion_detalle?.nombre_seccion || (typeof g?.seccion === 'string' ? g.seccion : '');
-const nombreTurno = (g) =>
-  g?.turno_detalle?.nombre_turno || (typeof g?.turno === 'string' ? g.turno : '');
-const idGrupo = (g) => g?.id_grupo ?? g?.id;
-
-const nombreAlumno = (al) =>
-  [al.primer_nombre, al.segundo_nombre, al.primer_apellido, al.segundo_apellido]
-    .filter(Boolean)
-    .join(' ') ||
-  al.nombre_completo ||
-  `Alumno ${al.id_alumno}`;
-
-const hoyISO = () => new Date().toISOString().split('T')[0];
-
 export const Asistencias = () => {
-  // --- Selectores: Grado, Sección, Turno y Fecha ---
-  const [grupos, setGrupos] = useState([]);
-  const [gradoSel, setGradoSel] = useState('');
-  const [seccionSel, setSeccionSel] = useState('');
-  const [turnoSel, setTurnoSel] = useState('');
-  const [fecha, setFecha] = useState(hoyISO());
-
-  // --- Pasar lista ---
-  const [grupoActivo, setGrupoActivo] = useState(null);
-  const [alumnos, setAlumnos] = useState([]);
-  const [previas, setPrevias] = useState({}); // id_alumno -> registro existente en backend
-  const [marcas, setMarcas] = useState({}); // id_alumno -> { estado, observaciones }
-
-  const [cargandoGrupos, setCargandoGrupos] = useState(true);
-  const [cargandoAlumnos, setCargandoAlumnos] = useState(false);
-  const [guardando, setGuardando] = useState(false);
-  const [mensaje, setMensaje] = useState(null); // { tipo: 'ok' | 'error', texto }
-
-  // Opciones únicas derivadas de /api/academico/grupos/
-  const opcionesGrado = useMemo(() => [...new Set(grupos.map(nombreGrado).filter(Boolean))], [grupos]);
-  const opcionesSeccion = useMemo(() => [...new Set(grupos.map(nombreSeccion).filter(Boolean))], [grupos]);
-  const opcionesTurno = useMemo(() => [...new Set(grupos.map(nombreTurno).filter(Boolean))], [grupos]);
-
-  // Carga inicial de grupos académicos
-  useEffect(() => {
-    (async () => {
-      setCargandoGrupos(true);
-      try {
-        const data = await gruposApi.getAll();
-        setGrupos(data || []);
-        if (data && data.length) {
-          setGradoSel((prev) => prev || nombreGrado(data[0]));
-          setSeccionSel((prev) => prev || nombreSeccion(data[0]));
-          setTurnoSel((prev) => prev || nombreTurno(data[0]));
-        }
-      } catch (err) {
-        console.error(err);
-        setMensaje({ tipo: 'error', texto: 'No se pudieron cargar los grupos académicos.' });
-      } finally {
-        setCargandoGrupos(false);
-      }
-    })();
-  }, []);
-
-  // Resolver el grupo que coincide con Grado + Sección + Turno seleccionados
-  useEffect(() => {
-    const grupo = grupos.find(
-      (g) =>
-        nombreGrado(g) === gradoSel &&
-        nombreSeccion(g) === seccionSel &&
-        (turnoSel === '' || nombreTurno(g) === turnoSel)
-    );
-    // eslint-disable-next-line react/set-state-in-effect -- deriva el grupo activo desde los filtros Grado+Sección+Turno
-    setGrupoActivo(grupo || null);
-  }, [grupos, gradoSel, seccionSel, turnoSel]);
-
-  // Cargar alumnos activos del grupo + asistencias ya registradas en la fecha
-  const cargarListado = useCallback(async () => {
-    if (!grupoActivo || !fecha) {
-      setAlumnos([]);
-      setPrevias({});
-      setMarcas({});
-      return;
-    }
-    setCargandoAlumnos(true);
-    setMensaje(null);
-    try {
-      const gid = idGrupo(grupoActivo);
-      const [listaAlumnos, registros] = await Promise.all([
-        gruposApi.getAlumnosActivos(gid),
-        asistenciasApi.getAll({ fecha, grupo: gid }),
-      ]);
-      const mapaPrevias = {};
-      (registros || []).forEach((r) => {
-        if (r.alumno != null) mapaPrevias[r.alumno] = r;
-      });
-      const iniciales = {};
-      (listaAlumnos || []).forEach((al) => {
-        const previo = mapaPrevias[al.id_alumno];
-        iniciales[al.id_alumno] = {
-          estado: previo?.estado || 'P',
-          observaciones: previo?.observaciones || '',
-        };
-      });
-      setAlumnos(listaAlumnos || []);
-      setPrevias(mapaPrevias);
-      setMarcas(iniciales);
-    } catch (err) {
-      console.error(err);
-      setMensaje({ tipo: 'error', texto: 'No se pudo cargar la lista de alumnos del grupo.' });
-    } finally {
-      setCargandoAlumnos(false);
-    }
-  }, [grupoActivo, fecha]);
-
-  useEffect(() => {
-    // eslint-disable-next-line react/set-state-in-effect -- sincroniza el listado con el grupo y la fecha seleccionados
-    cargarListado();
-  }, [grupoActivo, fecha, cargarListado]);
+  // Toda la lógica de estado, catálogos y HTTP vive en el hook (Misión 9)
+  const {
+    gradoSel,
+    setGradoSel,
+    seccionSel,
+    setSeccionSel,
+    turnoSel,
+    setTurnoSel,
+    fecha,
+    setFecha,
+    grupoActivo,
+    opcionesGrado,
+    opcionesSeccion,
+    opcionesTurno,
+    alumnos,
+    previas,
+    marcas,
+    setMarcas,
+    cargandoGrupos,
+    cargandoAlumnos,
+    guardando,
+    mensaje,
+    fetchAsistencias,
+    handleGuardarAsistencias,
+  } = useAsistencias();
 
   // Resumen en vivo del pase de lista
   const resumen = useMemo(() => {
@@ -185,68 +98,6 @@ export const Asistencias = () => {
       });
       return copia;
     });
-  };
-
-  // Guardar lote -> PUT a registros existentes + POST a nuevos en /api/academico/asistencias/
-  const handleGuardar = async () => {
-    if (!grupoActivo || alumnos.length === 0) return;
-    setGuardando(true);
-    setMensaje(null);
-
-    try {
-      const gid = idGrupo(grupoActivo);
-      let creadas = 0;
-      let actualizadas = 0;
-      const errores = [];
-
-      await Promise.all(
-        alumnos.map(async (al) => {
-          const marca = marcas[al.id_alumno];
-          if (!marca) return;
-          const payload = {
-            fecha,
-            alumno: al.id_alumno,
-            grupo: gid,
-            estado: marca.estado,
-            observaciones: marca.observaciones || '',
-          };
-          try {
-            const previo = previas[al.id_alumno];
-            if (previo?.id_asistencia) {
-              await asistenciasApi.update(previo.id_asistencia, payload);
-              actualizadas++;
-            } else {
-              await asistenciasApi.create(payload);
-              creadas++;
-            }
-          } catch (err) {
-            console.error(err);
-            errores.push(nombreAlumno(al));
-          }
-        })
-      );
-
-      if (errores.length > 0) {
-        setMensaje({
-          tipo: 'error',
-          texto: `No se pudieron guardar ${errores.length} registro(s): ${errores.join(', ')}`,
-        });
-      } else {
-        setMensaje({
-          tipo: 'ok',
-          texto: `Asistencia guardada: ${creadas} nueva(s), ${actualizadas} actualizada(s) — ${fecha}`,
-        });
-        await cargarListado();
-      }
-    } catch (err) {
-      console.error(err);
-      setMensaje({
-        tipo: 'error',
-        texto: 'Ocurrió un error al procesar el lote de asistencias',
-      });
-    } finally {
-      setGuardando(false);
-    }
   };
 
   // --- Exportación del listado actual ---
@@ -306,7 +157,7 @@ export const Asistencias = () => {
           >
             <FileText size={14} /> PDF
           </button>
-          <button onClick={cargarListado} disabled={cargandoAlumnos} className={`${claseExport} disabled:opacity-50`}>
+          <button onClick={fetchAsistencias} disabled={cargandoAlumnos} className={`${claseExport} disabled:opacity-50`}>
             <RefreshCw size={14} className={cargandoAlumnos ? 'animate-spin' : ''} /> Recargar
           </button>
         </div>
@@ -424,7 +275,7 @@ export const Asistencias = () => {
               </button>
             ))}
             <button
-              onClick={handleGuardar}
+              onClick={handleGuardarAsistencias}
               disabled={guardando}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 ml-2"
             >
