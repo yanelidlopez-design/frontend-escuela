@@ -1,3 +1,4 @@
+
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
@@ -17,7 +18,7 @@ export const exportToCSV = (data, filename = 'reporte-asistencias.csv') => {
   // Filas
   for (const row of data) {
     const values = headers.map((header) => {
-      const escaped = ('' + (row[header] ?? '')).replace(/"/g, '""');
+      const escaped = ('' + (row[header] ?? '')).replace(/\"/g, '""');
       return `"${escaped}"`;
     });
     csvRows.push(values.join(','));
@@ -32,6 +33,7 @@ export const exportToCSV = (data, filename = 'reporte-asistencias.csv') => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 /**
@@ -83,23 +85,43 @@ export const exportToExcel = async (data, filename = 'reporte-asistencias.xlsx',
 
 /**
  * Exporta los datos recibidos a un reporte PDF elegante.
+ * Si `opts.soloPrincipales` es true, se exportan SOLO los datos básicos y
+ * principales de cada fila (nombre, identificación, grado/sección, estado),
+ * omitiendo campos de detalle, observaciones y demás columnas del listado.
  */
-export const exportToPDF = (data, title = 'Reporte de Control de Asistencias', filename = 'reporte-asistencias.pdf') => {
-  if (!data || !data.length) return;
+export const exportToPDF = (data, title = 'Reporte de Control de Asistencias', filename = 'reporte-asistencias.pdf', opts = {}) => {
+  const { soloPrincipales = false } = opts;
 
-  const doc = new jsPDF();
+  // Si soloPrincipales, se exportan SOLO los datos básicos y principales
+  // de cada fila (nombre completo + campos de identificación y estado).
+  // Se omiten detalle, observaciones y demás columnas del listado.
+  let filaBase = data;
+  if (soloPrincipales && Array.isArray(data)) {
+    filaBase = data.map((fila) => {
+      const nombre = [fila.N, fila.Alumno, fila.Cedula]
+        .filter(Boolean).join(' ') || '—';
+      return {
+        Nombre: nombre,
+        'Cédula/ID': (fila.Cedula || fila.id || ''),
+        'Grado/Sección': (fila.Grado || fila.seccion || ''),
+        Turno: (fila.Turno || ''),
+        Fecha: (fila.Fecha || ''),
+        Estado: (fila.Estado || ''),
+      };
+    });
+  }
+
+  if (!filaBase || !filaBase.length) return;
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const today = new Date().toLocaleDateString('es-ES', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 
   // Cabecera institucional
   doc.setFillColor(15, 23, 42); // slate-900
   doc.rect(0, 0, 210, 24, 'F');
-  
+
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
@@ -115,13 +137,13 @@ export const exportToPDF = (data, title = 'Reporte de Control de Asistencias', f
   doc.setFont('helvetica', 'bold');
   doc.text(title, 14, 35);
 
-  const headers = Object.keys(data[0]).map((h) => h.toUpperCase().replace('_', ' '));
-  const body = data.map((row) => Object.values(row));
+  const headers = Object.keys(filaBase[0]).map((h) => h.toUpperCase().replace('_', ' '));
+  const body = filaBase.map((fila) => headers.map((h) => fila[h] ?? ''));
 
   autoTable(doc, {
     startY: 42,
     head: [headers],
-    body: body,
+    body,
     theme: 'grid',
     headStyles: {
       fillColor: [2, 132, 199], // brand-500

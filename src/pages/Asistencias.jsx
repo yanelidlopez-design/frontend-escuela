@@ -150,7 +150,8 @@ export const Asistencias = () => {
               exportToPDF(
                 filasExport(),
                 `Control de Asistencia ${nombreGrupo} — ${fecha}`,
-                `asistencias_${gradoSel || 'grupo'}_${fecha}.pdf`
+                `asistencias_${gradoSel || 'grupo'}_${fecha}.pdf`,
+                { soloPrincipales: true }
               )
             }
             className={claseExport}

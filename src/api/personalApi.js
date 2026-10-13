@@ -71,7 +71,7 @@ const customMethods = {
       });
       downloadBlob(response.data, 'application/pdf', 'listado_personal.pdf');
     } catch {
-      exportToPDF(filasPersonal(filtrarLocal(params)), 'Listado de Personal', 'listado_personal.pdf');
+      exportToPDF(filasPersonal(filtrarLocal(params)), 'Listado de Personal', 'listado_personal.pdf', { soloPrincipales: true });
     }
   },
 
