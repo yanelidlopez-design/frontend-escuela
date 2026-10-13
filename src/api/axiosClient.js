@@ -25,10 +25,19 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// Interceptor de Peticiones: No es necesario adjuntar Bearer Token manualmente
-// ya que la cookie HttpOnly se envía automáticamente con withCredentials=true
+// Interceptor de Peticiones: adjunta el access token como Bearer cuando
+// existe en localStorage (refuerza el envío de cookies en dev cross-origin,
+// donde SameSite=Lax impide que la cookie viaje en XHR).
 axiosClient.interceptors.request.use(
   (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      if (typeof config.headers?.set === 'function') {
+        config.headers.set('Authorization', `Bearer ${token}`);
+      } else {
+        config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
+      }
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -45,7 +54,12 @@ axiosClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    const isAuthEndpoint = originalRequest.url?.includes('/api/token/');
+    // Rutas de auth relativas al baseURL ('/api/'): no deben disparar refresh.
+    // '/token/' está contenido en '/token/refresh/', por eso la lista simple basta.
+    const urlRelativa = originalRequest.url || '';
+    const isAuthEndpoint = ['/token/', '/core/token/', '/core/logout/'].some(
+      (ruta) => urlRelativa.includes(ruta)
+    );
 
     if (error.response.status === 401 && !isAuthEndpoint) {
       if (isRefreshing) {
@@ -66,6 +80,7 @@ axiosClient.interceptors.response.use(
 
       if (!refreshToken) {
         isRefreshing = false;
+        localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_data');
         window.dispatchEvent(new Event('auth:unauthorized'));
@@ -73,12 +88,15 @@ axiosClient.interceptors.response.use(
       }
 
       try {
-        // Solicitud POST /token/refresh/
+        // Solicitud POST /token/refresh/ (MiTokenRefreshView: valida contra
+        // core.Usuarios y setea la cookie access_token; el body trae el access)
         const response = await axios.post(`${BASE_URL}token/refresh/`, {
           refresh: refreshToken,
         });
 
-        // Backend should set the new access_token as HttpOnly cookie
+        if (response.data.access) {
+          localStorage.setItem('access_token', response.data.access);
+        }
         if (response.data.refresh) {
           localStorage.setItem('refresh_token', response.data.refresh);
         }
@@ -90,6 +108,7 @@ axiosClient.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         isRefreshing = false;
+        localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_data');
         window.dispatchEvent(new Event('auth:unauthorized'));

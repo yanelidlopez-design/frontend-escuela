@@ -3,8 +3,14 @@ import axiosClient from './axiosClient';
 export const authApi = {
   login: async (username, password) => {
     try {
-      const response = await axiosClient.post('/token/', { username, password });
-      // access_token is now set as HttpOnly cookie by the backend
+      // El endpoint real de login es /api/core/token/ (custom_token_obtain:
+      // valida contra core.Usuarios y setea la cookie access_token).
+      const response = await axiosClient.post('/core/token/', { username, password });
+      // Se guarda también el access en localStorage para enviarlo como
+      // Bearer (necesario en dev cross-origin, donde la cookie Lax no viaja).
+      if (response.data.access) {
+        localStorage.setItem('access_token', response.data.access);
+      }
       if (response.data.refresh) {
         localStorage.setItem('refresh_token', response.data.refresh);
       }
@@ -19,6 +25,9 @@ export const authApi = {
 
   refreshToken: async (refresh) => {
     const response = await axiosClient.post('/token/refresh/', { refresh });
+    if (response.data.access) {
+      localStorage.setItem('access_token', response.data.access);
+    }
     return response.data;
   },
 
@@ -30,6 +39,7 @@ export const authApi = {
       // Continue with cleanup even if backend call fails
       console.error('Logout backend call failed:', error);
     }
+    localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_data');
   }

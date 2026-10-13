@@ -1,5 +1,6 @@
 import axiosClient from './axiosClient';
 import { createCrudApi, downloadBlob } from './crudFactory';
+import { exportarReporte, MIME_XLSX, MIME_PDF, MIME_CSV } from './exportaciones';
 import { initialInscripciones } from '../utils/mockData';
 
 // Filtro personalizado para inscripciones
@@ -26,9 +27,12 @@ const crudApi = createCrudApi('/academico/inscripciones/', initialInscripciones,
 const customMethods = {
   exportarExcel: async (params = {}) => {
     try {
-      const response = await axiosClient.get('/academico/inscripciones/exportar-inscripciones-excel/', { params, responseType: 'blob' });
-      downloadBlob(response.data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'inscripciones.xlsx');
-      return true;
+      return await exportarReporte({
+        endpoint: '/academico/inscripciones/exportar-inscripciones-excel/',
+        params,
+        filename: 'inscripciones.xlsx',
+        mimeType: MIME_XLSX,
+      });
     } catch (error) {
       console.error('Error al exportar inscripciones a Excel:', error);
       throw error;
@@ -37,9 +41,12 @@ const customMethods = {
 
   exportarPdf: async (params = {}) => {
     try {
-      const response = await axiosClient.get('/academico/inscripciones/exportar-inscripciones-pdf/', { params, responseType: 'blob' });
-      downloadBlob(response.data, 'application/pdf', 'inscripciones.pdf');
-      return true;
+      return await exportarReporte({
+        endpoint: '/academico/inscripciones/exportar-inscripciones-pdf/',
+        params,
+        filename: 'inscripciones.pdf',
+        mimeType: MIME_PDF,
+      });
     } catch (error) {
       console.error('Error al exportar inscripciones a PDF:', error);
       throw error;
@@ -49,7 +56,7 @@ const customMethods = {
   exportarCSV: async (params = {}) => {
     try {
       const response = await axiosClient.get('/academico/inscripciones/exportar-inscripciones-csv/', { params, responseType: 'blob' });
-      downloadBlob(response.data, 'text/csv;charset=utf-8', 'inscripciones.csv');
+      downloadBlob(response.data, MIME_CSV, 'inscripciones.csv');
       return true;
     } catch (error) {
       console.error('Error al exportar inscripciones a CSV:', error);
