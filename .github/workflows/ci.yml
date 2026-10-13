@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+# Misión 11 — CI del frontend con gate de seguridad:
+#   - npm audit --audit-level=high bloquea el flujo (rojo) ante
+#     vulnerabilidades de severidad HIGH o CRITICAL (moderadas/leves no
+#     bloquean).
+# Para bloquear el merge en GitHub, añadir en Settings > Branches >
+# Branch protection la regla "Require status checks to pass" con ci.
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: npm
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: "Run npm audit for dependency vulnerabilities (gate: high/critical)"
+      run: npm audit --audit-level=high
+
+    - name: Run linter
+      run: npm run lint
+
+    - name: Run tests
+      run: npx vitest run
+
+    - name: Build frontend
+      run: npm run build

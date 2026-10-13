@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 /**
  * Exporta los datos recibidos a un archivo CSV.
@@ -36,16 +36,49 @@ export const exportToCSV = (data, filename = 'reporte-asistencias.csv') => {
 
 /**
  * Exporta los datos recibidos a un archivo Excel (.xlsx).
+ * Usa exceljs (registry oficial, mantenida) en lugar de la librería xlsx
+ * de SheetJS, cuya única versión parcheada vive fuera de npm (Misión 11).
  */
-export const exportToExcel = (data, filename = 'reporte-asistencias.xlsx', sheetName = 'Asistencias') => {
+export const exportToExcel = async (data, filename = 'reporte-asistencias.xlsx', sheetName = 'Asistencias') => {
   if (!data || !data.length) return;
 
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+  const headers = Object.keys(data[0]);
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(sheetName);
+
+  // Encabezados en negrita
+  worksheet.addRow(headers);
+  worksheet.getRow(1).font = { bold: true };
+
+  // Filas de datos
+  for (const row of data) {
+    worksheet.addRow(headers.map((header) => row[header]));
+  }
+
+  // Auto-ajuste razonable del ancho de columnas
+  worksheet.columns.forEach((column, index) => {
+    const header = headers[index];
+    const maxWidth = data.reduce(
+      (max, row) => Math.max(max, String(row[header] ?? '').length),
+      header.length
+    );
+    column.width = Math.min(45, Math.max(10, maxWidth + 4));
+  });
 
   // Generar buffer y descargar
-  XLSX.writeFile(workbook, filename);
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
 
 /**
