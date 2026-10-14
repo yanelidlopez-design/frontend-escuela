@@ -99,12 +99,6 @@ export const Login = () => {
             )}
           </button>
         </form>
-
-        <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-          <p className="text-xs text-slate-400">
-            Conectado a la API: <code className="text-sky-600 font-mono">/api/token/</code>
-          </p>
-        </div>
       </div>
     </div>
   );
