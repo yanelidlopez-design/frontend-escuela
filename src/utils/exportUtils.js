@@ -18,8 +18,8 @@ export const exportToCSV = (data, filename = 'reporte-asistencias.csv') => {
   // Filas
   for (const row of data) {
     const values = headers.map((header) => {
-      const escaped = ('' + (row[header] ?? '')).replace(/\"/g, '""');
-      return `"${escaped}"`;
+      const escaped = ('' + (row[header] ?? '')).replace(/"/g, '""');
+      return '"' + escaped + '"';
     });
     csvRows.push(values.join(','));
   }

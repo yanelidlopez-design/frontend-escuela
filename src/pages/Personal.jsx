@@ -107,23 +107,51 @@ export const Personal = () => {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner & Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      {/* Encabezado del contenido: título a la izquierda, controles a la derecha en una sola línea */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h3 className="text-lg font-bold text-slate-900">Personal Administrativo y Obreros</h3>
+          <h2 className="text-xl font-bold text-slate-900">Personal Administrativo y Obreros</h2>
           <p className="text-xs text-slate-500 mt-1">Gestión de roles y cargos de personal (/api/v1/personal/)</p>
         </div>
-        <div className="flex items-center space-x-3">
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          {/* Búsqueda */}
+          <div className="relative">
+            <Search className="absolute left-3.5 top-2.5 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Buscar por cédula, nombre, apellido o cargo..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full sm:w-72 pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
+
+          {/* Filtro por categoría */}
+          <select
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <option value="">Todas las categorías</option>
+            {CATEGORIAS.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+
+          {/* Recargar */}
           <button
             onClick={loadData}
-            className="p-2.5 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+            className="p-2.5 text-slate-500 hover:text-slate-800 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors self-start sm:self-auto"
             title="Recargar datos"
           >
             <RefreshCw size={18} />
           </button>
+
+          {/* Acción principal */}
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center space-x-2 bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm px-4 py-2.5 rounded-xl shadow-md transition-all"
+            className="flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm px-4 py-2 rounded-lg shadow-md transition-all"
           >
             <Plus size={18} />
             <span>Nuevo Personal</span>
@@ -131,84 +159,54 @@ export const Personal = () => {
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 flex items-center space-x-4 shadow-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-3 text-slate-400" size={18} />
-          <input
-            type="text"
-            placeholder="Buscar por cédula, nombre, apellido o cargo..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-          />
-        </div>
-
-        {/* Filtro por categoría */}
-        <div className="flex items-center space-x-3">
-          <label className="text-xs font-semibold text-slate-600 uppercase">Categoría</label>
-          <select
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-          >
-            <option value="">Todas las categorías</option>
-            {CATEGORIAS.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+      {/* Tabla de datos profesional (tema oscuro, scroll horizontal) */}
+      <div className="overflow-x-auto bg-slate-900 border border-slate-800 rounded-xl shadow-sm">
+          <table className="w-full text-left text-sm text-slate-300">
+            <thead>
               <tr>
-                <th className="px-6 py-4">Cédula</th>
-                <th className="px-6 py-4">Personal</th>
-                <th className="px-6 py-4">Categoría</th>
-                <th className="px-6 py-4">Contacto</th>
-                <th className="px-6 py-4 text-right">Acciones</th>
+                <th className="px-6 py-3.5 bg-slate-800/50 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Cédula</th>
+                <th className="px-6 py-3.5 bg-slate-800/50 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Personal</th>
+                <th className="px-6 py-3.5 bg-slate-800/50 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Categoría</th>
+                <th className="px-6 py-3.5 bg-slate-800/50 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Contacto</th>
+                <th className="px-6 py-3.5 bg-slate-800/50 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="text-center py-8 text-slate-400">Cargando datos del personal...</td>
+                  <td colSpan="5" className="text-center py-10 text-slate-500">Cargando datos del personal...</td>
                 </tr>
               ) : personal.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="text-center py-8 text-slate-400">No se encontraron registros de personal.</td>
+                  <td colSpan="5" className="text-center py-10 text-slate-500">No se encontraron registros de personal.</td>
                 </tr>
               ) : (
                 personal.map((item) => (
-                  <tr key={item.id_profesor ?? item.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-6 py-4 font-mono font-medium text-slate-900">{item.cedula}</td>
-                    <td className="px-6 py-4 font-medium text-slate-900">
+                  <tr key={item.id_profesor ?? item.id} className="hover:bg-slate-800/60 transition-colors">
+                    <td className="px-6 py-4 font-mono font-medium text-slate-100">{item.cedula}</td>
+                    <td className="px-6 py-4 font-medium text-slate-100">
                       {[item.primer_nombre, item.segundo_nombre, item.primer_apellido, item.segundo_apellido].filter(Boolean).join(' ') || '—'}
                     </td>
                     <td className="px-6 py-4">
-                      <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
+                      <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-500/10 text-sky-300 border border-sky-500/30">
                         {item.categoria || item.especialidad || '—'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-xs">
-                      <div>{item.usuario_detalle?.email || item.email || '—'}</div>
-                      <div className="text-slate-400">{item.telefono || '—'}</div>
+                      <div className="text-slate-300">{item.usuario_detalle?.email || item.email || '—'}</div>
+                      <div className="text-slate-500">{item.telefono || '—'}</div>
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <button
                         onClick={() => handleOpenModal(item)}
-                        className="p-1.5 text-slate-400 hover:text-sky-600 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 hover:text-sky-400 rounded-lg transition-colors"
                         title="Editar"
                       >
                         <Edit2 size={16} />
                       </button>
                       <button
                         onClick={() => handleDelete(item.id_profesor ?? item.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg transition-colors"
                         title="Eliminar"
                       >
                         <Trash2 size={16} />
@@ -219,7 +217,6 @@ export const Personal = () => {
               )}
             </tbody>
           </table>
-        </div>
       </div>
 
       {/* Exportation Actions */}

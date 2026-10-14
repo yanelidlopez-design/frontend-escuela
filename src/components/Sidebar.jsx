@@ -1,63 +1,57 @@
 import React from 'react';
-import { Users, CalendarCheck, LogOut, BookOpen, User, ClipboardList } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export const Sidebar = ({ activeTab, setActiveTab }) => {
-  const { logout } = useAuth();
+const API_BASE = 'http://127.0.0.1:8001';
 
-  const menuItems = [
-    { id: 'personal', label: 'Personal con Cargo', icon: Users, endpoint: '/api/v1/personal/' },
-    { id: 'alumnos', label: 'Alumnos', icon: User, endpoint: '/api/academico/alumnos/' },
-    { id: 'inscripciones', label: 'Inscripciones', icon: ClipboardList, endpoint: '/api/academico/inscripciones/' },
-    { id: 'asistencias', label: 'Control de Asistencias', icon: CalendarCheck, endpoint: '/api/v1/academico/asistencias/' },
-  ];
+/**
+ * Sidebar compacta de estado e información:
+ * conexión a la API, Swagger UI y datos de la sesión (usuario + rol).
+ * No ocupa espacio de trabajo: es discreta y solo visible en pantallas grandes.
+ */
+export const Sidebar = () => {
+  const { user } = useAuth();
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 min-h-screen flex flex-col justify-between border-r border-slate-800">
-      <div>
-        <div className="flex items-center space-x-3 p-6 border-b border-slate-800">
-          <div className="p-2 bg-sky-600 rounded-lg text-white">
-            <BookOpen size={24} />
-          </div>
-          <div>
-            <h1 className="font-bold text-white text-base leading-tight">Académico Pro</h1>
-            <p className="text-xs text-slate-400">Sistema de Gestión</p>
-          </div>
+    <aside className="hidden lg:flex w-56 shrink-0 flex-col gap-4 border-r border-slate-200 bg-white p-4 overflow-y-auto">
+      {/* Estado de la API */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-3">Estado</p>
+        <div className="flex items-center gap-2 text-sm text-slate-700">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
+          <span className="font-medium">API Activa</span>
         </div>
-
-        <nav className="p-4 space-y-1">
-          <p className="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Módulos</p>
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? 'bg-sky-600 text-white shadow-md'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                </div>
-              </button>
-            );
-          })}
-        </nav>
+        <p className="mt-2 font-mono text-[11px] text-slate-500 break-all">{API_BASE}</p>
       </div>
 
-      <div className="p-4 border-t border-slate-800">
-        <button
-          onClick={logout}
-          className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-colors"
-        >
-          <LogOut size={18} />
-          <span>Cerrar Sesión</span>
-        </button>
+      {/* Swagger UI */}
+      <a
+        href={`${API_BASE}/swagger/`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+      >
+        <FileText size={14} />
+        <span>Swagger UI</span>
+      </a>
+
+      {/* Sesión: usuario y rol */}
+      <div className="mt-auto rounded-xl border border-slate-200 p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-3">Sesión</p>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 shrink-0 rounded-full bg-sky-100 text-sky-700 font-bold flex items-center justify-center text-sm border border-sky-200">
+            {user?.username?.[0]?.toUpperCase() || 'A'}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold text-slate-800">{user?.username || 'Usuario Admin'}</p>
+            <span className="mt-0.5 inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700 border border-sky-200">
+              {user?.role || 'Administrador'}
+            </span>
+          </div>
+        </div>
       </div>
     </aside>
   );

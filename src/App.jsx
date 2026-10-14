@@ -30,15 +30,8 @@ function MainContent() {
     }
   };
 
-  const titles = {
-    personal: 'Panel de Gestión de Personal',
-    alumnos: 'Panel de Gestión de Alumnos',
-    inscripciones: 'Gestión de Inscripciones',
-    asistencias: 'Control de Asistencia por Grado y Sección',
-  };
-
   return (
-    <Layout activeTab={activeTab} setActiveTab={setActiveTab} title={titles[activeTab]}>
+    <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
       {renderContent()}
     </Layout>
   );
