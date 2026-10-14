@@ -3,6 +3,7 @@ import { useAlumnos } from '../hooks/useAlumnos';
 import { extraerMensajeError } from '../utils/errorUtils';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
+import { exportToCSV, exportToExcel, exportToPDF } from '../utils/exportUtils';
 import { Plus, Search, Edit2, Trash2, RefreshCw, FileText } from 'lucide-react';
 
 // Tallas de uniforme escolar infantiles (4 a 12) para camisa y pantalón.
@@ -18,7 +19,6 @@ export const Alumnos = () => {
     estatusFilter, setEstatusFilter,
     grados, secciones, grupos, profesores,
     fetchAlumnos, handleCreate, handleUpdate, handleDelete,
-    exportarExcel, exportarPdf, exportarCSV,
   } = useAlumnos();
 
   // Estado puramente visual del modal
@@ -210,6 +210,25 @@ export const Alumnos = () => {
     return 'Sin asignar';
   };
 
+  // --- Exportación del listado visible (cliente, respeta los filtros activos) ---
+  // Los endpoints backend de exportación de alumnos no existen (404 silencioso):
+  // se genera el archivo en el navegador con las mismas columnas de la tabla.
+  const filasExport = () =>
+    alumnos.map((item) => ({
+      Cedula: [item.tipo_documento_identidad, item.numero_documento_identidad].filter(Boolean).join('-'),
+      'Cedula Escolar': item.cedula_escolar || '',
+      Nombre: getNombreCompleto(item),
+      'Fecha Nacimiento': item.fecha_nacimiento || '',
+      Genero: item.genero || '',
+      Representante: getRepresentanteNombre(item),
+      Estatus: item.estatus_general || '',
+      'Profesor Encargado': getProfesorEncargado(item),
+    }));
+
+  const exportarExcel = () => exportToExcel(filasExport(), 'alumnos.xlsx', 'Alumnos');
+  const exportarPdf = () => exportToPDF(filasExport(), 'Listado de Alumnos', 'alumnos.pdf');
+  const exportarCSV = () => exportToCSV(filasExport(), 'alumnos.csv');
+
   return (
     <div className="space-y-6">
       {/* Top Banner & Actions */}
@@ -292,22 +311,25 @@ export const Alumnos = () => {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={exportarExcel}
+            disabled={!alumnos.length}
           >
             <FileText size={18} /> Exportar a Excel
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={exportarPdf}
+            disabled={!alumnos.length}
           >
             <FileText size={18} /> Exportar a PDF
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={exportarCSV}
+            disabled={!alumnos.length}
           >
             <FileText size={18} /> Exportar a CSV
           </button>

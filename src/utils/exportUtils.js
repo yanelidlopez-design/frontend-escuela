@@ -93,22 +93,19 @@ export const exportToPDF = (data, title = 'Reporte de Control de Asistencias', f
   const { soloPrincipales = false } = opts;
 
   // Si soloPrincipales, se exportan SOLO los datos básicos y principales
-  // de cada fila (nombre completo + campos de identificación y estado).
+  // de cada fila (nombre + campos de identificación, grado/sección y estado).
   // Se omiten detalle, observaciones y demás columnas del listado.
   let filaBase = data;
   if (soloPrincipales && Array.isArray(data)) {
-    filaBase = data.map((fila) => {
-      const nombre = [fila.N, fila.Alumno, fila.Cedula]
-        .filter(Boolean).join(' ') || '—';
-      return {
-        Nombre: nombre,
-        'Cédula/ID': (fila.Cedula || fila.id || ''),
-        'Grado/Sección': (fila.Grado || fila.seccion || ''),
-        Turno: (fila.Turno || ''),
-        Fecha: (fila.Fecha || ''),
-        Estado: (fila.Estado || ''),
-      };
-    });
+    filaBase = data.map((fila) => ({
+      ...(fila.N != null ? { 'N.º': fila.N } : {}),
+      Nombre: fila.Alumno || fila.Nombre || fila.Cedula || '—',
+      'Cédula/ID': (fila.Cedula || fila.id || ''),
+      'Grado/Sección': [fila.Grado, fila.Seccion || fila.seccion].filter(Boolean).join(' - '),
+      Turno: (fila.Turno || ''),
+      Fecha: (fila.Fecha || ''),
+      Estado: (fila.Estado || ''),
+    }));
   }
 
   if (!filaBase || !filaBase.length) return;
@@ -137,8 +134,12 @@ export const exportToPDF = (data, title = 'Reporte de Control de Asistencias', f
   doc.setFont('helvetica', 'bold');
   doc.text(title, 14, 35);
 
-  const headers = Object.keys(filaBase[0]).map((h) => h.toUpperCase().replace('_', ' '));
-  const body = filaBase.map((fila) => headers.map((h) => fila[h] ?? ''));
+  // Las claves ORIGINALES se usan para leer los valores de cada fila; la
+  // versión en mayúsculas solo sirve como encabezado visible. (Antes se
+  // buscaba con la clave ya transformada y todo el cuerpo salía vacío.)
+  const columnas = Object.keys(filaBase[0]);
+  const headers = columnas.map((h) => h.toUpperCase().replace(/_/g, ' '));
+  const body = filaBase.map((fila) => columnas.map((col) => fila[col] ?? ''));
 
   autoTable(doc, {
     startY: 42,

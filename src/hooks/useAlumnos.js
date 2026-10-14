@@ -8,7 +8,7 @@ import { extraerMensajeError } from '../utils/errorUtils';
 /**
  * Custom hook del módulo de Alumnos.
  * Centraliza: lista, filtros, catálogos, loading, errores y las
- * operaciones CRUD (sobre la factoría CRUD de la Misión 6) + exportaciones.
+ * operaciones CRUD (sobre la factoría CRUD de la Misión 6).
  * El componente solo consume estado y callbacks (es puramente visual).
  */
 export const useAlumnos = () => {
@@ -113,19 +113,8 @@ export const useAlumnos = () => {
     }
   }, [fetchAlumnos]);
 
-  // ---------- Exportaciones (respetan los filtros activos) ----------
-  const exportarExcel = useCallback(
-    () => alumnosApi.exportarExcel({ grado, seccion, estado: estatusFilter }).catch(() => {}),
-    [grado, seccion, estatusFilter]
-  );
-  const exportarPdf = useCallback(
-    () => alumnosApi.exportarPdf({ grado, seccion, estado: estatusFilter }).catch(() => {}),
-    [grado, seccion, estatusFilter]
-  );
-  const exportarCSV = useCallback(
-    () => alumnosApi.exportarCSV({ grado, seccion, estado: estatusFilter }).catch(() => {}),
-    [grado, seccion, estatusFilter]
-  );
+  // ---------- Exportaciones: la página genera los archivos en el cliente
+  // ---------- con exportUtils (los endpoints backend no existen).
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -154,9 +143,5 @@ export const useAlumnos = () => {
     handleUpdate,
     handleDelete,
     clearError,
-    // Exportaciones
-    exportarExcel,
-    exportarPdf,
-    exportarCSV,
   };
 };

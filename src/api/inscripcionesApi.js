@@ -1,6 +1,4 @@
-import axiosClient from './axiosClient';
-import { createCrudApi, downloadBlob } from './crudFactory';
-import { exportarReporte, MIME_XLSX, MIME_PDF, MIME_CSV } from './exportaciones';
+import { createCrudApi } from './crudFactory';
 import { initialInscripciones } from '../utils/mockData';
 
 // Filtro personalizado para inscripciones
@@ -23,50 +21,9 @@ const customInscripcionesFilter = (items, params) => {
 // Crear API CRUD estándar usando la factoría
 const crudApi = createCrudApi('/academico/inscripciones/', initialInscripciones, customInscripcionesFilter);
 
-// Métodos específicos de inscripciones con exportación
-const customMethods = {
-  exportarExcel: async (params = {}) => {
-    try {
-      return await exportarReporte({
-        endpoint: '/academico/inscripciones/exportar-inscripciones-excel/',
-        params,
-        filename: 'inscripciones.xlsx',
-        mimeType: MIME_XLSX,
-      });
-    } catch (error) {
-      console.error('Error al exportar inscripciones a Excel:', error);
-      throw error;
-    }
-  },
-
-  exportarPdf: async (params = {}) => {
-    try {
-      return await exportarReporte({
-        endpoint: '/academico/inscripciones/exportar-inscripciones-pdf/',
-        params,
-        filename: 'inscripciones.pdf',
-        mimeType: MIME_PDF,
-      });
-    } catch (error) {
-      console.error('Error al exportar inscripciones a PDF:', error);
-      throw error;
-    }
-  },
-
-  exportarCSV: async (params = {}) => {
-    try {
-      const response = await axiosClient.get('/academico/inscripciones/exportar-inscripciones-csv/', { params, responseType: 'blob' });
-      downloadBlob(response.data, MIME_CSV, 'inscripciones.csv');
-      return true;
-    } catch (error) {
-      console.error('Error al exportar inscripciones a CSV:', error);
-      throw error;
-    }
-  }
-};
-
-// Exportar la API combinando CRUD estándar + métodos específicos
+// La exportación de listados vive en la página (se genera en el cliente con
+// exportUtils): los endpoints backend de exportación no existían y el 404
+// quedaba silenciado por .catch(() => {}).
 export const inscripcionesApi = {
   ...crudApi,
-  ...customMethods
 };

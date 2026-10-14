@@ -1,6 +1,5 @@
 import axiosClient from './axiosClient';
-import { createCrudApi, downloadBlob } from './crudFactory';
-import { exportarReporte, MIME_XLSX, MIME_PDF, MIME_CSV } from './exportaciones';
+import { createCrudApi } from './crudFactory';
 import { initialAlumnos } from '../utils/mockData';
 
 // Filtro personalizado para alumnos (busca en nombre, apellido, cedula, documento)
@@ -43,45 +42,6 @@ const customMethods = {
       return initialAlumnos.filter(a => a.grado === grado && a.seccion === seccion);
     }
   },
-
-  exportarExcel: async (params = {}) => {
-    try {
-      return await exportarReporte({
-        endpoint: '/academico/alumnos/exportar-alumnos-excel/',
-        params,
-        filename: 'alumnos.xlsx',
-        mimeType: MIME_XLSX,
-      });
-    } catch (error) {
-      console.error('Error al exportar alumnos a Excel:', error);
-      throw error;
-    }
-  },
-
-  exportarPdf: async (params = {}) => {
-    try {
-      return await exportarReporte({
-        endpoint: '/academico/alumnos/exportar-alumnos-pdf/',
-        params,
-        filename: 'alumnos.pdf',
-        mimeType: MIME_PDF,
-      });
-    } catch (error) {
-      console.error('Error al exportar alumnos a PDF:', error);
-      throw error;
-    }
-  },
-
-  exportarCSV: async (params = {}) => {
-    try {
-      const response = await axiosClient.get('/academico/alumnos/exportar-alumnos-csv/', { params, responseType: 'blob' });
-      downloadBlob(response.data, MIME_CSV, 'alumnos.csv');
-      return true;
-    } catch (error) {
-      console.error('Error al exportar alumnos a CSV:', error);
-      throw error;
-    }
-  }
 };
 
 // Exportar la API combinando CRUD estándar + métodos específicos

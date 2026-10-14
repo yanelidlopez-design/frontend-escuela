@@ -5,6 +5,7 @@ import { gruposApi } from '../api/gruposApi';
 import { personalApi } from '../api/personalApi';
 import { coreApi } from '../api/coreApi';
 import { extraerMensajeError } from '../utils/errorUtils';
+import { exportToCSV, exportToExcel, exportToPDF } from '../utils/exportUtils';
 import { Modal } from '../components/Modal';
 import { Plus, Search, Edit2, Trash2, RefreshCw, FileSpreadsheet, FileText, Download } from 'lucide-react';
 
@@ -383,6 +384,28 @@ export const Inscripciones = () => {
     }
   };
 
+  // --- Exportación del listado visible (cliente, respeta los filtros activos) ---
+  // Los endpoints backend de exportación de inscripciones no existen (404
+  // silencioso): se genera el archivo en el navegador con las mismas columnas
+  // de la tabla, sobre la lista ya filtrada por el servidor.
+  const filasExport = () =>
+    inscripciones.map((item) => ({
+      Alumno: getAlumnoNombre(item.alumno_id || item.alumno),
+      Cedula: getAlumnoCedula(item.alumno_id || item.alumno),
+      Grupo: getGrupoNombre(item.grupo_id || item.grupo),
+      Periodo: getGrupoDetalle(item.grupo_id || item.grupo)?.periodo || '',
+      'Fecha Inscripcion': item.fecha_inscripcion
+        ? new Date(item.fecha_inscripcion).toLocaleDateString('es-VE')
+        : '',
+      Estado: item.estado_inscripcion || '',
+      'Monto Pago': formatMonto(item.monto_pago),
+      Referencia: item.referencia_bancaria || '',
+    }));
+
+  const exportarExcel = () => exportToExcel(filasExport(), 'inscripciones.xlsx', 'Inscripciones');
+  const exportarPdf = () => exportToPDF(filasExport(), 'Listado de Inscripciones', 'inscripciones.pdf');
+  const exportarCSV = () => exportToCSV(filasExport(), 'inscripciones.csv');
+
   return (
     <div className="space-y-6">
       {/* Top Banner & Actions */}
@@ -466,28 +489,25 @@ export const Inscripciones = () => {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => inscripcionesApi
-              .exportarExcel({ grado: gradoFilter, seccion: seccionFilter, estado_inscripcion: estadoFilter, search })
-              .catch(() => {})}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+            onClick={exportarExcel}
+            disabled={!inscripciones.length}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileSpreadsheet size={16} /> Excel
           </button>
           <button
             type="button"
-            onClick={() => inscripcionesApi
-              .exportarPdf({ grado: gradoFilter, seccion: seccionFilter, estado_inscripcion: estadoFilter, search })
-              .catch(() => {})}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition-colors"
+            onClick={exportarPdf}
+            disabled={!inscripciones.length}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileText size={16} /> PDF
           </button>
           <button
             type="button"
-            onClick={() => inscripcionesApi
-              .exportarCSV({ grado: gradoFilter, seccion: seccionFilter, estado_inscripcion: estadoFilter, search })
-              .catch(() => {})}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+            onClick={exportarCSV}
+            disabled={!inscripciones.length}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download size={16} /> CSV
           </button>
