@@ -457,7 +457,7 @@ export const Alumnos = () => {
         onClose={() => setIsModalOpen(false)}
         title={editingItem ? 'Editar Alumno' : 'Registrar Nuevo Alumno'}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Tipo Documento</label>

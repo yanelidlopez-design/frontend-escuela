@@ -9,9 +9,12 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'default' }) =>
     large: 'max-w-4xl'
   };
 
+  // m-auto (no items-center/justify-center): con contenido más alto que la
+  // pantalla los márgenes auto caen a 0 y el modal queda scrolleable desde
+  // el inicio; el centrado vertical/horizontal se mantiene cuando sí cabe.
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className={`relative bg-white rounded-xl shadow-2xl ${sizeClasses[size]} w-full p-6 border border-slate-100 animate-in fade-in zoom-in duration-200`}>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex p-4">
+      <div className={`relative bg-white rounded-xl shadow-2xl m-auto ${sizeClasses[size]} w-full p-6 border border-slate-100 animate-in fade-in zoom-in duration-200`}>
         <div className="flex justify-between items-center pb-4 mb-4 border-b border-slate-100">
           <h3 className="text-lg font-bold text-slate-900">{title}</h3>
           <button
