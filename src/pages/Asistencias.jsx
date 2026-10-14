@@ -128,9 +128,6 @@ export const Asistencias = () => {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h3 className="text-lg font-bold text-slate-900">Control de Asistencia de Alumnos</h3>
-          <p className="text-xs text-slate-500 mt-1">
-            Pase de lista por Grado, Sección, Turno y Fecha — fuente: /api/academico/grupos/
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button

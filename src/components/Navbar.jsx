@@ -20,8 +20,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
           <BookOpen size={20} />
         </div>
         <div className="leading-tight">
-          <h1 className="font-bold text-white text-sm">Académico Pro</h1>
-          <p className="text-[11px] text-slate-400">Sistema de Gestión</p>
+          <p className="font-bold text-white text-sm">Sistema de Gestión</p>
         </div>
       </div>
 

@@ -9,7 +9,7 @@ export const Layout = ({ activeTab, setActiveTab, children }) => {
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <div className="flex flex-1 min-h-0">
-        {/* Sidebar discreta: estado de API, Swagger y datos de sesión */}
+        {/* Sidebar discreta: datos de sesión */}
         <Sidebar />
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
       </div>
