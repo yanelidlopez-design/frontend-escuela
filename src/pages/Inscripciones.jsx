@@ -70,6 +70,19 @@ export const Inscripciones = () => {
       numero_cuenta: '',
       tipo_cuenta: '',
       banco: '',
+      entidad_federal_nacimiento: '',
+      municipio_nacimiento: '',
+      parroquia_nacimiento: '',
+      apoyo_escolar: false,
+      vacunas_completas: false,
+      estado_civil_padres: '',
+      profesion_madre: '',
+      profesion_padre: '',
+      ingreso_familiar: '',
+      tipo_vivienda: '',
+      numero_hermanos: '',
+      numero_en_el_planter: '',
+      observaciones: '',
       direccion: { calle: '', ciudad: '', estado: '', referencia: '' },
       representante: { cedula: '', nombre: '', telefono: '' },
       parentesco: ''
@@ -161,6 +174,19 @@ export const Inscripciones = () => {
           numero_cuenta: '',
           tipo_cuenta: '',
           banco: '',
+          entidad_federal_nacimiento: '',
+          municipio_nacimiento: '',
+          parroquia_nacimiento: '',
+          apoyo_escolar: false,
+          vacunas_completas: false,
+          estado_civil_padres: '',
+          profesion_madre: '',
+          profesion_padre: '',
+          ingreso_familiar: '',
+          tipo_vivienda: '',
+          numero_hermanos: '',
+          numero_en_el_planter: '',
+          observaciones: '',
           direccion: { calle: '', ciudad: '', estado: '', referencia: '' },
           representante: { cedula: '', nombre: '', telefono: '' },
           parentesco: ''
@@ -205,6 +231,19 @@ export const Inscripciones = () => {
           numero_cuenta: '',
           tipo_cuenta: '',
           banco: '',
+          entidad_federal_nacimiento: '',
+          municipio_nacimiento: '',
+          parroquia_nacimiento: '',
+          apoyo_escolar: false,
+          vacunas_completas: false,
+          estado_civil_padres: '',
+          profesion_madre: '',
+          profesion_padre: '',
+          ingreso_familiar: '',
+          tipo_vivienda: '',
+          numero_hermanos: '',
+          numero_en_el_planter: '',
+          observaciones: '',
           direccion: { calle: '', ciudad: '', estado: '', referencia: '' },
           representante: { cedula: '', nombre: '', telefono: '' },
           parentesco: ''
@@ -225,6 +264,9 @@ export const Inscripciones = () => {
           fecha_inscripcion_inicial: formData.fecha_inscripcion,
           estatus_general: 'Activo'
         };
+        // Enteros opcionales: cadena vacía => null (DRF rechaza '' en campos Integer).
+        if (payloadAlumno.numero_hermanos === '') payloadAlumno.numero_hermanos = null;
+        if (payloadAlumno.numero_en_el_planter === '') payloadAlumno.numero_en_el_planter = null;
         if (direccion && direccion.calle && direccion.calle.trim()) {
           payloadAlumno.direccion = direccion;
         }
@@ -742,6 +784,39 @@ export const Inscripciones = () => {
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Estado Nacimiento</label>
+                    <input
+                      type="text"
+                      value={formData.nuevoAlumno.entidad_federal_nacimiento}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, entidad_federal_nacimiento: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. Miranda"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Municipio Nacimiento</label>
+                    <input
+                      type="text"
+                      value={formData.nuevoAlumno.municipio_nacimiento}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, municipio_nacimiento: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. Sucre"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Parroquia Nacimiento</label>
+                    <input
+                      type="text"
+                      value={formData.nuevoAlumno.parroquia_nacimiento}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, parroquia_nacimiento: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. Petare"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="border-b border-slate-200 pb-4">
@@ -897,6 +972,58 @@ export const Inscripciones = () => {
                       />
                     </div>
                   )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">¿Recibe Apoyo Escolar?</label>
+                      <div className="flex items-center space-x-4 mt-2">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="apoyo_escolar"
+                            checked={formData.nuevoAlumno.apoyo_escolar === true}
+                            onChange={() => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, apoyo_escolar: true } })}
+                            className="mr-2"
+                          />
+                          Sí
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="apoyo_escolar"
+                            checked={formData.nuevoAlumno.apoyo_escolar === false}
+                            onChange={() => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, apoyo_escolar: false } })}
+                            className="mr-2"
+                          />
+                          No
+                        </label>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">¿Vacunas Completas?</label>
+                      <div className="flex items-center space-x-4 mt-2">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="vacunas_completas"
+                            checked={formData.nuevoAlumno.vacunas_completas === true}
+                            onChange={() => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, vacunas_completas: true } })}
+                            className="mr-2"
+                          />
+                          Sí
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="vacunas_completas"
+                            checked={formData.nuevoAlumno.vacunas_completas === false}
+                            onChange={() => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, vacunas_completas: false } })}
+                            className="mr-2"
+                          />
+                          No
+                        </label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1013,6 +1140,97 @@ export const Inscripciones = () => {
               </div>
 
               <div className="border-b border-slate-200 pb-4">
+                <h4 className="text-sm font-semibold text-slate-800 mb-3">👨‍👩‍👧 Datos Familiares</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Estado Civil Padres</label>
+                    <select
+                      value={formData.nuevoAlumno.estado_civil_padres}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, estado_civil_padres: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="Casados">Casados</option>
+                      <option value="Divorciados">Divorciados</option>
+                      <option value="Separados">Separados</option>
+                      <option value="Viudos">Viudos</option>
+                      <option value="Solteros">Solteros</option>
+                      <option value="Unión libre">Unión libre</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Tipo de Vivienda</label>
+                    <select
+                      value={formData.nuevoAlumno.tipo_vivienda}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, tipo_vivienda: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                    >
+                      <option value="">Seleccionar...</option>
+                      <option value="Propia">Propia</option>
+                      <option value="Alquilada">Alquilada</option>
+                      <option value="De familiares">De familiares</option>
+                      <option value="Cedida">Cedida</option>
+                      <option value="Otra">Otra</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Profesión de la Madre</label>
+                    <input
+                      type="text"
+                      value={formData.nuevoAlumno.profesion_madre}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, profesion_madre: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. Enfermera"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Profesión del Padre</label>
+                    <input
+                      type="text"
+                      value={formData.nuevoAlumno.profesion_padre}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, profesion_padre: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. Chofer"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">N° de Hermanos</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.nuevoAlumno.numero_hermanos}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, numero_hermanos: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. 2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">N° de Hermanos en el Plantel</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.nuevoAlumno.numero_en_el_planter}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, numero_en_el_planter: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. 1"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Ingreso Familiar (Bs.)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.nuevoAlumno.ingreso_familiar}
+                      onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, ingreso_familiar: e.target.value } })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                      placeholder="ej. 15000"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b border-slate-200 pb-4">
                 <h4 className="text-sm font-semibold text-slate-800 mb-3">👨‍👩‍👧 Datos del Representante Legal</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -1067,6 +1285,17 @@ export const Inscripciones = () => {
                     </select>
                   </div>
                 </div>
+              </div>
+
+              <div className="border-b border-slate-200 pb-4">
+                <h4 className="text-sm font-semibold text-slate-800 mb-3">🗒️ Observaciones</h4>
+                <textarea
+                  value={formData.nuevoAlumno.observaciones}
+                  onChange={(e) => setFormData({ ...formData, nuevoAlumno: { ...formData.nuevoAlumno, observaciones: e.target.value } })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  rows="3"
+                  placeholder="Notas u observaciones generales del alumno..."
+                />
               </div>
             </div>
           ) : (
