@@ -57,6 +57,19 @@ export const Alumnos = () => {
     numero_cuenta: '',
     tipo_cuenta: '',
     banco: '',
+    entidad_federal_nacimiento: '',
+    municipio_nacimiento: '',
+    parroquia_nacimiento: '',
+    apoyo_escolar: false,
+    vacunas_completas: false,
+    estado_civil_padres: '',
+    profesion_madre: '',
+    profesion_padre: '',
+    ingreso_familiar: '',
+    tipo_vivienda: '',
+    numero_hermanos: '',
+    numero_en_el_planter: '',
+    observaciones: '',
     direccion: { calle: '', ciudad: '', estado: '', referencia: '' },
     representante: { cedula: '', nombre: '', telefono: '' },
     parentesco: ''
@@ -78,6 +91,19 @@ export const Alumnos = () => {
         numero_cuenta: item.numero_cuenta || '',
         tipo_cuenta: item.tipo_cuenta || '',
         banco: item.banco || '',
+        entidad_federal_nacimiento: item.entidad_federal_nacimiento || '',
+        municipio_nacimiento: item.municipio_nacimiento || '',
+        parroquia_nacimiento: item.parroquia_nacimiento || '',
+        apoyo_escolar: Boolean(item.apoyo_escolar),
+        vacunas_completas: Boolean(item.vacunas_completas),
+        estado_civil_padres: item.estado_civil_padres || '',
+        profesion_madre: item.profesion_madre || '',
+        profesion_padre: item.profesion_padre || '',
+        ingreso_familiar: item.ingreso_familiar ?? '',
+        tipo_vivienda: item.tipo_vivienda || '',
+        numero_hermanos: item.numero_hermanos ?? '',
+        numero_en_el_planter: item.numero_en_el_planter ?? '',
+        observaciones: item.observaciones || '',
         direccion: {
           calle: (dir && dir.calle) || '',
           ciudad: (dir && dir.ciudad) || '',
@@ -125,6 +151,19 @@ export const Alumnos = () => {
         numero_cuenta: '',
         tipo_cuenta: '',
         banco: '',
+        entidad_federal_nacimiento: '',
+        municipio_nacimiento: '',
+        parroquia_nacimiento: '',
+        apoyo_escolar: false,
+        vacunas_completas: false,
+        estado_civil_padres: '',
+        profesion_madre: '',
+        profesion_padre: '',
+        ingreso_familiar: '',
+        tipo_vivienda: '',
+        numero_hermanos: '',
+        numero_en_el_planter: '',
+        observaciones: '',
         direccion: { calle: '', ciudad: '', estado: '', referencia: '' },
         representante: { cedula: '', nombre: '', telefono: '' },
         parentesco: ''
@@ -145,6 +184,9 @@ export const Alumnos = () => {
         : null;
       // Grupo vacío => null (el backend no toca la inscripción activa si es null).
       payload.id_grupo = payload.id_grupo ? Number(payload.id_grupo) : null;
+      // Enteros opcionales: cadena vacía => null (DRF rechaza '' en campos Integer).
+      if (payload.numero_hermanos === '') payload.numero_hermanos = null;
+      if (payload.numero_en_el_planter === '') payload.numero_en_el_planter = null;
       // Dirección anidada solo si la calle tiene contenido (evita direcciones vacías).
       if (direccion && direccion.calle && direccion.calle.trim()) {
         payload.direccion = direccion;
@@ -544,6 +586,39 @@ export const Alumnos = () => {
 
           <div className="grid grid-cols-3 gap-4">
             <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Estado Nacimiento</label>
+              <input
+                type="text"
+                value={formData.entidad_federal_nacimiento}
+                onChange={(e) => setFormData({ ...formData, entidad_federal_nacimiento: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                placeholder="ej. Miranda"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Municipio Nacimiento</label>
+              <input
+                type="text"
+                value={formData.municipio_nacimiento}
+                onChange={(e) => setFormData({ ...formData, municipio_nacimiento: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                placeholder="ej. Sucre"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Parroquia Nacimiento</label>
+              <input
+                type="text"
+                value={formData.parroquia_nacimiento}
+                onChange={(e) => setFormData({ ...formData, parroquia_nacimiento: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                placeholder="ej. Petare"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Grupo Sanguíneo</label>
               <select
                 value={formData.grupo_sanguineo}
@@ -698,6 +773,58 @@ export const Alumnos = () => {
                   />
                 </div>
               )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">¿Recibe Apoyo Escolar?</label>
+                  <div className="flex items-center space-x-4 mt-2">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="apoyo_escolar"
+                        checked={formData.apoyo_escolar === true}
+                        onChange={() => setFormData({ ...formData, apoyo_escolar: true })}
+                        className="mr-2"
+                      />
+                      Sí
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="apoyo_escolar"
+                        checked={formData.apoyo_escolar === false}
+                        onChange={() => setFormData({ ...formData, apoyo_escolar: false })}
+                        className="mr-2"
+                      />
+                      No
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">¿Vacunas Completas?</label>
+                  <div className="flex items-center space-x-4 mt-2">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="vacunas_completas"
+                        checked={formData.vacunas_completas === true}
+                        onChange={() => setFormData({ ...formData, vacunas_completas: true })}
+                        className="mr-2"
+                      />
+                      Sí
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="vacunas_completas"
+                        checked={formData.vacunas_completas === false}
+                        onChange={() => setFormData({ ...formData, vacunas_completas: false })}
+                        className="mr-2"
+                      />
+                      No
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -808,6 +935,97 @@ export const Alumnos = () => {
                   onChange={(e) => setFormData({ ...formData, banco: e.target.value })}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
                   placeholder="ej. Banco de Venezuela"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-4">
+            <h4 className="text-sm font-semibold text-slate-800 mb-3">👨‍👩‍👧 Datos Familiares</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Estado Civil Padres</label>
+                <select
+                  value={formData.estado_civil_padres}
+                  onChange={(e) => setFormData({ ...formData, estado_civil_padres: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="Casados">Casados</option>
+                  <option value="Divorciados">Divorciados</option>
+                  <option value="Separados">Separados</option>
+                  <option value="Viudos">Viudos</option>
+                  <option value="Solteros">Solteros</option>
+                  <option value="Unión libre">Unión libre</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Tipo de Vivienda</label>
+                <select
+                  value={formData.tipo_vivienda}
+                  onChange={(e) => setFormData({ ...formData, tipo_vivienda: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="Propia">Propia</option>
+                  <option value="Alquilada">Alquilada</option>
+                  <option value="De familiares">De familiares</option>
+                  <option value="Cedida">Cedida</option>
+                  <option value="Otra">Otra</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Profesión de la Madre</label>
+                <input
+                  type="text"
+                  value={formData.profesion_madre}
+                  onChange={(e) => setFormData({ ...formData, profesion_madre: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="ej. Enfermera"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Profesión del Padre</label>
+                <input
+                  type="text"
+                  value={formData.profesion_padre}
+                  onChange={(e) => setFormData({ ...formData, profesion_padre: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="ej. Chofer"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">N° de Hermanos</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.numero_hermanos}
+                  onChange={(e) => setFormData({ ...formData, numero_hermanos: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="ej. 2"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">N° de Hermanos en el Plantel</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.numero_en_el_planter}
+                  onChange={(e) => setFormData({ ...formData, numero_en_el_planter: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="ej. 1"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Ingreso Familiar (Bs.)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.ingreso_familiar}
+                  onChange={(e) => setFormData({ ...formData, ingreso_familiar: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                  placeholder="ej. 15000"
                 />
               </div>
             </div>
@@ -951,6 +1169,17 @@ export const Alumnos = () => {
                 </select>
               </div>
             </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-4">
+            <h4 className="text-sm font-semibold text-slate-800 mb-3">🗒️ Observaciones</h4>
+            <textarea
+              value={formData.observaciones}
+              onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              rows="3"
+              placeholder="Notas u observaciones generales del alumno..."
+            />
           </div>
 
           <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
