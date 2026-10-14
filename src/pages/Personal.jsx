@@ -111,7 +111,6 @@ export const Personal = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Personal Administrativo y Obreros</h2>
-          <p className="text-xs text-slate-500 mt-1">Gestión de roles y cargos de personal (/api/v1/personal/)</p>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -223,9 +222,6 @@ export const Personal = () => {
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div className="text-sm text-slate-500">
           <span className="font-semibold text-slate-700">Exportación por categoría:</span>
-          <span className="ml-2 text-xs text-slate-400">
-            {categoria ? `API: /personal/personal-con-cargos/?categoria=${encodeURIComponent(categoria)}` : 'API: /personal/personal-con-cargos/'}
-          </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button

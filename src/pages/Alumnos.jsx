@@ -235,7 +235,6 @@ export const Alumnos = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h3 className="text-lg font-bold text-slate-900">Registro de Alumnos</h3>
-          <p className="text-xs text-slate-500 mt-1">Gestión de matrícula y ficha del estudiante (/api/academico/alumnos/)</p>
         </div>
         <div className="flex items-center space-x-3">
           <button

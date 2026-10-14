@@ -412,7 +412,6 @@ export const Inscripciones = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div>
           <h3 className="text-lg font-bold text-slate-900">Gestión de Inscripciones</h3>
-          <p className="text-xs text-slate-500 mt-1">Matrícula y proceso de inscripción académica (/api/academico/inscripciones/)</p>
         </div>
         <div className="flex items-center space-x-3">
           <button
