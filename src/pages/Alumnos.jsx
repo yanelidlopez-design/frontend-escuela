@@ -6,8 +6,8 @@ import { Modal } from '../components/Modal';
 import { exportToCSV, exportToExcel, exportToPDF } from '../utils/exportUtils';
 import { Plus, Search, Edit2, Trash2, RefreshCw, FileText } from 'lucide-react';
 
-// Tallas de uniforme escolar infantiles (4 a 12) para camisa y pantalón.
-const TALLAS_UNIFORME = ['4', '5', '6', '7', '8', '9', '10', '11', '12'];
+// Tallas de uniforme escolar (4 a 18) para camisa y pantalón.
+const TALLAS_UNIFORME = ['4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18'];
 
 export const Alumnos = () => {
   // Toda la lógica de estado, filtros, catálogos y HTTP vive en el hook (Misión 9)

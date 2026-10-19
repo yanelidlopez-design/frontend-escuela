@@ -4,6 +4,15 @@ import { alumnosApi } from '../api/alumnosApi';
 import { gruposApi } from '../api/gruposApi';
 import { personalApi } from '../api/personalApi';
 import { coreApi } from '../api/coreApi';
+import {
+  listarPeriodos,
+  crearPeriodo,
+  alternarEstadoPeriodo,
+  actualizarPeriodo,
+  eliminarPeriodo,
+  obtenerPeriodoActivo,
+  construirUrlInscripcionPublica,
+} from '../api/periodosApi';
 import { extraerMensajeError } from '../utils/errorUtils';
 import { exportToCSV, exportToExcel, exportToPDF } from '../utils/exportUtils';
 import { Modal } from '../components/Modal';
@@ -13,8 +22,8 @@ const nombreGrado = (g) => g?.grado_detalle?.nombre_grado || (typeof g?.grado ==
 const nombreSeccion = (g) => g?.seccion_detalle?.nombre_seccion || (typeof g?.seccion === 'string' ? g.seccion : '');
 const nombreTurno = (g) => g?.turno_detalle?.nombre_turno || (typeof g?.turno === 'string' ? g.turno : '');
 
-// Tallas de uniforme escolar infantiles (4 a 12) para camisa y pantalón.
-const TALLAS_UNIFORME = ['4', '5', '6', '7', '8', '9', '10', '11', '12'];
+// Tallas de uniforme escolar (4 a 18) para camisa y pantalón.
+const TALLAS_UNIFORME = ['4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18'];
 
 
 export const Inscripciones = () => {
@@ -23,6 +32,23 @@ export const Inscripciones = () => {
   const [grupos, setGrupos] = useState([]);
   const [profesores, setProfesores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [linkPublico, setLinkPublico] = useState('');
+  const [copiado, setCopiado] = useState(false);
+  const [loadingPeriodos, setLoadingPeriodos] = useState(false);
+  const [editandoPeriodo, setEditandoPeriodo] = useState(false);
+  const [nuevoNombre, setNuevoNombre] = useState('');
+  const [nuevaFechaInicio, setNuevaFechaInicio] = useState('');
+  const [nuevaFechaFin, setNuevaFechaFin] = useState('');
+  const [creandoPeriodo, setCreandoPeriodo] = useState(false);
+  const [nombreNuevoPeriodo, setNombreNuevoPeriodo] = useState('');
+  const [fechaInicioNuevoPeriodo, setFechaInicioNuevoPeriodo] = useState('');
+  const [fechaFinNuevoPeriodo, setFechaFinNuevoPeriodo] = useState('');
+  const [guardandoPeriodo, setGuardandoPeriodo] = useState(false);
+  // Lista completa de periodos (activos e inactivos) para que el admin vea
+  // también los recién creados con el switch apagado.
+  const [listaPeriodos, setListaPeriodos] = useState([]);
+  // pk del periodo que se está editando en el formulario inline.
+  const [periodoEditandoId, setPeriodoEditandoId] = useState(null);
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
   const [gradoFilter, setGradoFilter] = useState('');
@@ -133,6 +159,140 @@ export const Inscripciones = () => {
     loadCatalogos();
   }, []);
   /* eslint-enable react/set-state-in-effect */
+
+  // Carga todos los periodos de inscripción, actualiza la lista completa y
+  // deriva el periodo activo + link público. Se reutiliza tras crear/editar/
+  // alternar para mantener la UI sincronizada con el backend.
+  const recargarPeriodos = async () => {
+    setLoadingPeriodos(true);
+    try {
+      const response = await listarPeriodos();
+      const data = Array.isArray(response.data) ? response.data : [];
+      setListaPeriodos(data);
+      const activo = obtenerPeriodoActivo(data);
+      if (activo?.token_acceso) {
+        setLinkPublico(construirUrlInscripcionPublica(activo.token_acceso));
+      } else {
+        setLinkPublico('');
+      }
+    } catch (err) {
+      console.error('Error cargando periodos de inscripción:', err);
+    } finally {
+      setLoadingPeriodos(false);
+    }
+  };
+
+  // Carga los periodos al montar la página.
+  /* eslint-disable react/set-state-in-effect, react-hooks/exhaustive-deps -- carga única al montar */
+  useEffect(() => {
+    recargarPeriodos();
+  }, []);
+  /* eslint-enable react/set-state-in-effect, react-hooks/exhaustive-deps */
+
+  const copiarLinkPublico = async () => {
+    if (!linkPublico) return;
+    try {
+      await navigator.clipboard.writeText(linkPublico);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch (err) {
+      console.error('No se pudo copiar el enlace:', err);
+    }
+  };
+
+  const toggleEstadoPeriodo = async (id) => {
+    const periodo = listaPeriodos.find((p) => p.id === id);
+    if (!periodo) return;
+    try {
+      await alternarEstadoPeriodo(id, !periodo.activo_manual);
+      await recargarPeriodos();
+    } catch (err) {
+      console.error('Error alternando estado del periodo:', err);
+    }
+  };
+
+  const abrirEdicionPeriodo = (periodo) => {
+    if (!periodo) return;
+    // La API devuelve fechas ISO (ej: '2026-11-01T00:00:00-04:00'), pero
+    // <input type="date"> solo acepta 'YYYY-MM-DD'. Se corta la parte de
+    // tiempo conservando la fecha tal como la expresó el backend.
+    setPeriodoEditandoId(periodo.id);
+    setNuevoNombre(periodo.nombre || '');
+    setNuevaFechaInicio(periodo.fecha_inicio ? periodo.fecha_inicio.split('T')[0] : '');
+    setNuevaFechaFin(periodo.fecha_fin ? periodo.fecha_fin.split('T')[0] : '');
+    setEditandoPeriodo(true);
+    setCreandoPeriodo(false);
+  };
+
+  const guardarEdicionPeriodo = async () => {
+    if (!periodoEditandoId) return;
+    try {
+      await actualizarPeriodo(periodoEditandoId, {
+        nombre: nuevoNombre,
+        fecha_inicio: nuevaFechaInicio,
+        fecha_fin: nuevaFechaFin,
+      });
+      await recargarPeriodos();
+      setEditandoPeriodo(false);
+      setPeriodoEditandoId(null);
+    } catch (err) {
+      console.error('Error actualizando periodo:', err);
+    }
+  };
+
+  const cancelarEdicionPeriodo = () => {
+    setEditandoPeriodo(false);
+    setPeriodoEditandoId(null);
+  };
+
+  const abrirCreacionPeriodo = () => {
+    setNombreNuevoPeriodo('');
+    setFechaInicioNuevoPeriodo('');
+    setFechaFinNuevoPeriodo('');
+    setCreandoPeriodo(true);
+    // Cerrar el formulario de edición si estuviera abierto.
+    setEditandoPeriodo(false);
+    setPeriodoEditandoId(null);
+  };
+
+  const cancelarCreacionPeriodo = () => {
+    setCreandoPeriodo(false);
+  };
+
+  const guardarCreacionPeriodo = async () => {
+    if (!nombreNuevoPeriodo || !fechaInicioNuevoPeriodo || !fechaFinNuevoPeriodo) return;
+    setGuardandoPeriodo(true);
+    try {
+      await crearPeriodo({
+        nombre: nombreNuevoPeriodo,
+        fecha_inicio: fechaInicioNuevoPeriodo,
+        fecha_fin: fechaFinNuevoPeriodo,
+        activo_manual: false,
+      });
+      // Recargar la lista completa: el periodo nuevo aparecerá en la tabla
+      // con el switch apagado, listo para activarlo desde el botón.
+      await recargarPeriodos();
+      setCreandoPeriodo(false);
+    } catch (err) {
+      console.error('Error creando periodo:', err);
+    } finally {
+      setGuardandoPeriodo(false);
+    }
+  };
+
+  const eliminarPeriodoConfirmado = async (periodo) => {
+    if (!periodo) return;
+    const mensaje = periodo.activo_manual
+      ? `¿Eliminar el periodo "${periodo.nombre}"? Está ACTIVO: el enlace público dejará de funcionar.`
+      : `¿Eliminar el periodo "${periodo.nombre}"? Esta acción no se puede deshacer.`;
+    if (!window.confirm(mensaje)) return;
+    try {
+      await eliminarPeriodo(periodo.id);
+      await recargarPeriodos();
+    } catch (err) {
+      console.error('Error eliminando periodo:', err);
+    }
+  };
 
   const handleOpenModal = (item = null) => {
     if (item) {
@@ -1454,6 +1614,210 @@ export const Inscripciones = () => {
           </div>
         </form>
       </Modal>
+
+      {/* === Link de inscripción pública ======================================== */}
+      <section className="mt-8 border border-slate-200 rounded-xl p-4 bg-slate-50">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+              🔗 Inscripción Pública
+            </h3>
+            <p className="text-xs text-slate-600 mt-1">
+              Compartí este enlace con los representantes para que se inscriban
+              sin necesidad de usuario en la plataforma.
+            </p>
+          </div>
+          <button
+            onClick={abrirCreacionPeriodo}
+            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded-lg"
+          >
+            + Crear nuevo periodo
+          </button>
+        </div>
+
+        {/* Enlace del periodo activo (si lo hay) */}
+        {loadingPeriodos ? (
+          <p className="mt-3 text-xs text-slate-500 animate-pulse">Cargando…</p>
+        ) : linkPublico ? (
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              type="text"
+              value={linkPublico}
+              readOnly
+              className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-xs text-slate-700 bg-white focus:outline-none focus:ring-1 focus:ring-sky-500"
+            />
+            <button
+              onClick={copiarLinkPublico}
+              disabled={copiado}
+              className="px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs rounded-lg disabled:bg-slate-400 disabled:cursor-not-allowed"
+            >
+              {copiado ? '¡Copiado!' : 'Copiar'}
+            </button>
+          </div>
+        ) : (
+          <p className="mt-3 text-xs text-slate-600">
+            No hay un periodo de inscripción activo. Creá uno y activálo para generar el enlace público.
+          </p>
+        )}
+
+        {/* Lista de TODOS los periodos (activos e inactivos) para que el
+            admin vea también los recién creados con el switch apagado. */}
+        {listaPeriodos.length > 0 && (
+          <ul className="mt-4 pt-3 border-t border-slate-200 space-y-2">
+            {listaPeriodos.map((periodo) => (
+              <li
+                key={periodo.id}
+                className="flex flex-col sm:flex-row sm:items-center gap-2 bg-white border border-slate-200 rounded-lg p-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">{periodo.nombre}</p>
+                  <p className="text-xs text-slate-500">
+                    {periodo.fecha_inicio ? periodo.fecha_inicio.split('T')[0] : '—'} →{' '}
+                    {periodo.fecha_fin ? periodo.fecha_fin.split('T')[0] : '—'}
+                  </p>
+                </div>
+                <span
+                  className={`px-2 py-1 rounded-md text-xs font-medium self-start sm:self-auto ${
+                    periodo.activo_manual
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {periodo.activo_manual ? 'Activo' : 'Inactivo'}
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => toggleEstadoPeriodo(periodo.id)}
+                    className="px-2 py-1 text-xs border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-100"
+                  >
+                    {periodo.activo_manual ? 'Desactivar' : 'Activar'}
+                  </button>
+                  <button
+                    onClick={() => abrirEdicionPeriodo(periodo)}
+                    className="px-2 py-1 text-xs bg-sky-50 border border-sky-200 rounded-lg text-sky-700 hover:bg-sky-100"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => eliminarPeriodoConfirmado(periodo)}
+                    className="px-2 py-1 text-xs bg-red-50 border border-red-200 rounded-lg text-red-600 hover:bg-red-100"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Formulario de edición de fechas */}
+        {editandoPeriodo && (
+              <div className="mt-3 pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="col-span-1 sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                    Nombre del periodo
+                  </label>
+                  <input
+                    type="text"
+                    value={nuevoNombre}
+                    onChange={(e) => setNuevoNombre(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                    Fecha inicio
+                  </label>
+                  <input
+                    type="date"
+                    value={nuevaFechaInicio}
+                    onChange={(e) => setNuevaFechaInicio(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                    Fecha fin
+                  </label>
+                  <input
+                    type="date"
+                    value={nuevaFechaFin}
+                    onChange={(e) => setNuevaFechaFin(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
+                <div className="col-span-1 sm:col-span-3 flex gap-2">
+                  <button
+                    onClick={guardarEdicionPeriodo}
+                    className="flex-1 px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm rounded-lg"
+                  >
+                    Guardar cambios
+                  </button>
+                  <button
+                    onClick={cancelarEdicionPeriodo}
+                    className="px-3 py-2 border border-slate-300 text-slate-700 text-sm rounded-lg hover:bg-slate-50"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+        )}
+
+        {/* Formulario de creación de nuevo periodo */}
+        {creandoPeriodo && (
+          <div className="mt-3 pt-3 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="col-span-1 sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                Nombre del nuevo periodo
+              </label>
+              <input
+                type="text"
+                value={nombreNuevoPeriodo}
+                onChange={(e) => setNombreNuevoPeriodo(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                Fecha inicio
+              </label>
+              <input
+                type="date"
+                value={fechaInicioNuevoPeriodo}
+                onChange={(e) => setFechaInicioNuevoPeriodo(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
+                Fecha fin
+              </label>
+              <input
+                type="date"
+                value={fechaFinNuevoPeriodo}
+                onChange={(e) => setFechaFinNuevoPeriodo(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+            <div className="col-span-1 sm:col-span-3 flex gap-2">
+              <button
+                onClick={guardarCreacionPeriodo}
+                disabled={guardandoPeriodo}
+                className="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm rounded-lg disabled:bg-emerald-400 disabled:cursor-not-allowed"
+              >
+                {guardandoPeriodo ? 'Guardando…' : 'Crear periodo'}
+              </button>
+              <button
+                onClick={cancelarCreacionPeriodo}
+                className="px-3 py-2 border border-slate-300 text-slate-700 text-sm rounded-lg hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
     </div>
   );
 };
