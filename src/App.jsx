@@ -6,6 +6,7 @@ import { Personal } from './pages/Personal';
 import { Asistencias } from './pages/Asistencias';
 import { Alumnos } from './pages/Alumnos';
 import { Inscripciones } from './pages/Inscripciones';
+import { Calificaciones } from './pages/Calificaciones';
 
 function MainContent() {
   const { isAuthenticated } = useAuth();
@@ -25,6 +26,8 @@ function MainContent() {
         return <Inscripciones />;
       case 'asistencias':
         return <Asistencias />;
+      case 'calificaciones':
+        return <Calificaciones />;
       default:
         return <Personal />;
     }

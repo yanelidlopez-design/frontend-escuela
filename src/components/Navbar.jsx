@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, CalendarCheck, ClipboardList, User, BookOpen, LogOut } from 'lucide-react';
+import { Users, CalendarCheck, ClipboardList, User, BookOpen, LogOut, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const MODULOS = [
@@ -7,6 +7,7 @@ const MODULOS = [
   { id: 'alumnos', label: 'Alumnos', icon: User },
   { id: 'inscripciones', label: 'Inscripciones', icon: ClipboardList },
   { id: 'asistencias', label: 'Asistencias', icon: CalendarCheck },
+  { id: 'calificaciones', label: 'Calificaciones', icon: Star },
 ];
 
 export const Navbar = ({ activeTab, setActiveTab }) => {
