@@ -501,9 +501,12 @@ export const Inscripciones = () => {
   const getGrupoNombre = (grupoId) => {
     const grupo = grupos.find(g => g.id_grupo === grupoId || g.id === grupoId);
     if (grupo) {
-      return `${grupo.grado?.nombre_grado || grupo.grado} - Sección ${grupo.seccion?.nombre_seccion || grupo.seccion}`.trim();
+      const grado = String(grupo.grado?.nombre_grado || grupo.grado || '').trim();
+      const seccion = String(grupo.seccion?.nombre_seccion || grupo.seccion || '').trim();
+      if (grado && seccion) return `${grado}-${seccion}`;
+      return (grado || seccion) || 'Grado-Sección no encontrado';
     }
-    return 'Grado y Sección no encontrados';
+    return 'Grado-Sección no encontrado';
   };
 
   const getGrupoDetalle = (grupoId) => {
@@ -749,7 +752,9 @@ export const Inscripciones = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="font-semibold text-slate-800">{getGrupoNombre(item.grupo_id || item.grupo)}</div>
-                        <div className="text-xs text-slate-400">{grupoDetalle.periodo}</div>
+                        {grupoDetalle.periodo && (
+                          <div className="text-xs text-slate-400">Período {grupoDetalle.periodo}</div>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         {item.fecha_inscripcion ? new Date(item.fecha_inscripcion).toLocaleDateString('es-VE') : '-'}
