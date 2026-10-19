@@ -20,7 +20,6 @@ import { Plus, Search, Edit2, Trash2, RefreshCw, FileSpreadsheet, FileText, Down
 
 const nombreGrado = (g) => g?.grado_detalle?.nombre_grado || (typeof g?.grado === 'string' ? g.grado : '');
 const nombreSeccion = (g) => g?.seccion_detalle?.nombre_seccion || (typeof g?.seccion === 'string' ? g.seccion : '');
-const nombreTurno = (g) => g?.turno_detalle?.nombre_turno || (typeof g?.turno === 'string' ? g.turno : '');
 
 // Tallas de uniforme escolar (4 a 18) para camisa y pantalón.
 const TALLAS_UNIFORME = ['4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18'];
@@ -502,9 +501,9 @@ export const Inscripciones = () => {
   const getGrupoNombre = (grupoId) => {
     const grupo = grupos.find(g => g.id_grupo === grupoId || g.id === grupoId);
     if (grupo) {
-      return `${grupo.grado?.nombre_grado || grupo.grado} '${grupo.seccion?.nombre_seccion || grupo.seccion}'`;
+      return `${grupo.grado?.nombre_grado || grupo.grado} - Sección ${grupo.seccion?.nombre_seccion || grupo.seccion}`.trim();
     }
-    return 'Grupo no encontrado';
+    return 'Grado y Sección no encontrados';
   };
 
   const getGrupoDetalle = (grupoId) => {
@@ -594,7 +593,7 @@ export const Inscripciones = () => {
     inscripciones.map((item) => ({
       Alumno: getAlumnoNombre(item.alumno_id || item.alumno),
       Cedula: getAlumnoCedula(item.alumno_id || item.alumno),
-      Grupo: getGrupoNombre(item.grupo_id || item.grupo),
+      'Grado y Sección': getGrupoNombre(item.grupo_id || item.grupo),
       Periodo: getGrupoDetalle(item.grupo_id || item.grupo)?.periodo || '',
       'Fecha Inscripcion': item.fecha_inscripcion
         ? new Date(item.fecha_inscripcion).toLocaleDateString('es-VE')
@@ -722,7 +721,7 @@ export const Inscripciones = () => {
             <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
               <tr>
                 <th className="px-6 py-4">Alumno</th>
-                <th className="px-6 py-4">Grupo Académico</th>
+                <th className="px-6 py-4">Grado y Sección</th>
                 <th className="px-6 py-4">Fecha Inscripción</th>
                 <th className="px-6 py-4">Estado</th>
                 <th className="px-6 py-4">Monto Pago</th>
@@ -1478,10 +1477,10 @@ export const Inscripciones = () => {
           )}
 
           <div className="border-t border-slate-200 pt-4">
-            <h4 className="text-sm font-semibold text-slate-800 mb-3">🏫 Grupo y Docente Encargado</h4>
+            <h4 className="text-sm font-semibold text-slate-800 mb-3">🏫 Grado, Sección y Docente Encargado</h4>
             <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Grupo Académico</label>
+            <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Grado y Sección</label>
             <select
               required
               value={formData.grupo}
@@ -1496,16 +1495,15 @@ export const Inscripciones = () => {
               }}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             >
-              <option value="">Seleccionar grupo...</option>
+              <option value="">Seleccionar grado y sección...</option>
               {grupos.map((grupo) => {
                 // Normaliza el id: backend real usa id_grupo; mock offline usa id.
                 const grupoId = grupo.id_grupo ?? grupo.id;
                 const grado = nombreGrado(grupo);
                 const seccion = nombreSeccion(grupo);
-                const turno = nombreTurno(grupo);
                 return (
                   <option key={grupoId} value={grupoId}>
-                    {grado} - Secc. {seccion} ({turno})
+                    {grado} - Sección {seccion}
                   </option>
                 );
               })}
@@ -1526,7 +1524,7 @@ export const Inscripciones = () => {
               disabled={!formData.grupo}
             >
               <option value="">
-                {formData.grupo ? 'Seleccionar profesor...' : 'Primero seleccione un grupo...'}
+                {formData.grupo ? 'Seleccionar profesor...' : 'Primero seleccione un grado y sección...'}
               </option>
               {profesores.map((profesor) => (
                 <option key={profesor.id_profesor ?? profesor.id} value={profesor.id_profesor ?? profesor.id}>

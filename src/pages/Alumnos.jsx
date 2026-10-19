@@ -1035,7 +1035,7 @@ export const Alumnos = () => {
             <h4 className="text-sm font-semibold text-slate-800 mb-3">🎓 Asignación Académica</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Grupo Académico</label>
+                <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">Grado y Sección</label>
                 <select
                   value={formData.id_grupo ?? ''}
                   onChange={(e) => {
@@ -1059,10 +1059,9 @@ export const Alumnos = () => {
                     const gid = g.id_grupo ?? g.id;
                     const grado = g?.grado_detalle?.nombre_grado || g?.grado || '';
                     const seccion = g?.seccion_detalle?.nombre_seccion || g?.seccion || '';
-                    const turno = g?.turno_detalle?.nombre_turno || g?.turno || '';
                     return (
                       <option key={gid} value={gid}>
-                        {grado} - Secc. {seccion}{turno ? ` (${turno})` : ''}
+                        {grado} - Sección {seccion}
                       </option>
                     );
                   })}
