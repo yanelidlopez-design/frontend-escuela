@@ -20,6 +20,7 @@ import { Plus, Search, Edit2, Trash2, RefreshCw, FileSpreadsheet, FileText, Down
 
 const nombreGrado = (g) => g?.grado_detalle?.nombre_grado || (typeof g?.grado === 'string' ? g.grado : '');
 const nombreSeccion = (g) => g?.seccion_detalle?.nombre_seccion || (typeof g?.seccion === 'string' ? g.seccion : '');
+const nombrePeriodo = (g) => g?.periodo_detalle?.nombre_periodo || (typeof g?.periodo === 'string' ? g.periodo : '');
 
 // Tallas de uniforme escolar (4 a 18) para camisa y pantalón.
 const TALLAS_UNIFORME = ['4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18'];
@@ -501,8 +502,9 @@ export const Inscripciones = () => {
   const getGrupoNombre = (grupoId) => {
     const grupo = grupos.find(g => g.id_grupo === grupoId || g.id === grupoId);
     if (grupo) {
-      const grado = String(grupo.grado?.nombre_grado || grupo.grado || '').trim();
-      const seccion = String(grupo.seccion?.nombre_seccion || grupo.seccion || '').trim();
+      // Usa los *_detalle del serializer (nombres reales); nunca la FK numérica.
+      const grado = nombreGrado(grupo).trim();
+      const seccion = nombreSeccion(grupo).trim();
       if (grado && seccion) return `${grado}-${seccion}`;
       return (grado || seccion) || 'Grado-Sección no encontrado';
     }
@@ -513,9 +515,9 @@ export const Inscripciones = () => {
     const grupo = grupos.find(g => g.id_grupo === grupoId || g.id === grupoId);
     if (grupo) {
       return {
-        grado: grupo.grado?.nombre_grado || grupo.grado,
-        seccion: grupo.seccion?.nombre_seccion || grupo.seccion,
-        periodo: grupo.periodo?.nombre_periodo || grupo.periodo
+        grado: nombreGrado(grupo),
+        seccion: nombreSeccion(grupo),
+        periodo: nombrePeriodo(grupo)
       };
     }
     return { grado: '-', seccion: '-', periodo: '-' };
