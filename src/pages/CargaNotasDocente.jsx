@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  validarTokenExterno,
+  obtenerDatosFormularioExterno,
   guardarCalificacionesExterna,
   guardarCriteriosExterna,
   registrarProcescionFinal,
@@ -58,6 +58,7 @@ export default function CargaNotasDocente() {
   const [success, setSuccess] = useState(null);
 
   const [formData, setFormData] = useState({});
+  const [draftRestored, setDraftRestored] = useState(false);
 
   // ------------------------------------------------------------------
   // 1. Lectura del token de la URL y validación contra el backend
@@ -78,25 +79,34 @@ export default function CargaNotasDocente() {
       try {
         setLoading(true);
         setError(null);
-        const data = await validarTokenExterno(t);
+        const data = await obtenerDatosFormularioExterno(t);
         if (!mounted) return;
 
         setConfig({
           numero_periodo: data.numero_periodo ?? 1,
-          fecha_limite: data.fecha_limite ?? null,
-          activo_manual: data.activo_manual ?? false,
-          token_acceso: data.token_acceso ?? t,
+          fecha_limite: null,
+          activo_manual: false,
+          token_acceso: t,
         });
 
-        if (data.id_grupo_academico) {
-          setIdGrupoAcademico(String(data.id_grupo_academico));
-        }
-        if (data.nivel_educativo) {
-          setNivelEducativo(data.nivel_educativo);
+        if (data.grupo?.id) {
+          setIdGrupoAcademico(String(data.grupo.id));
         }
         if (Array.isArray(data.alumnos)) {
           setAlumnos(data.alumnos);
-          inicializarFormData(data.alumnos);
+          const storageKey = `borrador_notas_${t}`;
+          const borradorGuardado = localStorage.getItem(storageKey);
+          if (borradorGuardado) {
+            try {
+              const borrador = JSON.parse(borradorGuardado);
+              setFormData(borrador);
+              setDraftRestored(true);
+            } catch {
+              inicializarFormData(data.alumnos);
+            }
+          } else {
+            inicializarFormData(data.alumnos);
+          }
         }
         if (Array.isArray(data.criterios)) {
           setCriterios(data.criterios);
@@ -111,6 +121,17 @@ export default function CargaNotasDocente() {
     })();
     return () => { mounted = false; };
   }, []);
+
+  // ------------------------------------------------------------------
+  // Persistencia de borrador en localStorage (auto-guardado de emergencia)
+  // Guarda los textos del docente para proteger contra cierres accidentales
+  // o apagones del dispositivo. Clave única por token de URL.
+  // ------------------------------------------------------------------
+  useEffect(() => {
+    if (!token) return;
+    if (Object.keys(formData).length === 0) return;
+    localStorage.setItem(`borrador_notas_${token}`, JSON.stringify(formData));
+  }, [token, formData]);
 
   // ------------------------------------------------------------------
   // Inicializa formData vacío para cada alumno
@@ -246,6 +267,8 @@ export default function CargaNotasDocente() {
 
       setSubmitted(true);
       setSuccess('¡Calificaciones guardadas correctamente! Se ha procesado la sección completa.');
+      // Limpiar borrador de localStorage tras envío exitoso al servidor
+      localStorage.removeItem(`borrador_notas_${token}`);
     } catch (err) {
       const msg = extraerMensajeError(err);
       setError(msg || 'No se pudieron guardar las calificaciones. Inténtelo de nuevo.');
@@ -372,6 +395,18 @@ export default function CargaNotasDocente() {
           <div className="rounded-lg p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm">
             <strong>Atención:</strong> el periodo de carga de notas ha concluido o está cerrado.
             El envío puede ser rechazado por el backend.
+          </div>
+        </div>
+      )}
+
+      {/* Banner de borrador restaurado desde localStorage */}
+      {draftRestored && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 animate-in fade-in duration-300">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">📋 Borrador restaurado:</span>
+            <span>
+              Se ha restaurado un borrador guardado localmente de forma automática.
+            </span>
           </div>
         </div>
       )}
