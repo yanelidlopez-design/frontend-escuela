@@ -53,3 +53,35 @@ export const construirUrlCargaDocente = (tokenAcceso, baseUrl) => {
   const baseSinApi = backendBase.replace(/\/api\/?$/, '');
   return `${baseSinApi}/api/academico/calificaciones/cargar-externa/?token=${encodeURIComponent(tokenAcceso)}`;
 };
+
+/**
+ * Crea un nuevo periodo de calificación (POST protegido con JWT).
+ * El axiosClient adjunta automáticamente el Bearer token desde localStorage
+ * y gestiona la renovación automática en caso de 401.
+ * @param {object} datosPeriodo - p. ej. { numero_periodo, fecha_limite, activo_manual }
+ */
+export const crearPeriodoCalificacion = async (datosPeriodo) => {
+  const respuesta = await axiosClient.post(BASE_PATH, datosPeriodo);
+  return respuesta.data;
+};
+
+/**
+ * Descarga el informe descriptivo de lapso en PDF (stream binario protegido por JWT).
+ * Configura estrictamente responseType: 'blob' para recibir los bytes del archivo.
+ * @param {number|string} alumnoId - pk del alumno
+ * @param {number|string} periodoId - pk del periodo de calificación (1=Diciembre, 2=Abril, 3=Julio)
+ */
+export const descargarInformeLapsoPdf = (alumnoId, periodoId) =>
+  axiosClient.get(`/academico/calificaciones/informe-lapso-pdf/${alumnoId}/${periodoId}/`, {
+    responseType: 'blob',
+  });
+
+/**
+ * Descarga la constancia de prosecución final en PDF (stream binario protegido por JWT).
+ * Configura estrictamente responseType: 'blob' para recibir los bytes del archivo.
+ * @param {number|string} alumnoId - pk del alumno
+ */
+export const descargarConstanciaProsecucionPdf = (alumnoId) =>
+  axiosClient.get(`/academico/calificaciones/prosecucion-final-pdf/${alumnoId}/`, {
+    responseType: 'blob',
+  });
