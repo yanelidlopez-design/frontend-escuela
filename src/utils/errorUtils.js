@@ -1,20 +1,27 @@
 /**
  * Extrae un mensaje legible del error de una petición fallida.
- * Soporta: JSON del backend, página HTML de Django (DEBUG) y errores de red.
+ * Soporta: JSON del backend (excepciones de dominio y DRF), errores de red y fallos generales.
  */
 export const extraerMensajeError = (err) => {
   const raw = err?.response?.data;
-  if (typeof raw === 'string') {
-    // Django debug HTML: intentar "Exception Value" y luego <title>
-    const valor = raw.match(/Exception Value:?\s*<\/th>\s*<td><pre>([\s\S]*?)<\/pre>/);
-    if (valor) return valor[1].trim();
-    const titulo = raw.match(/<title>([\s\S]*?)<\/title>/);
-    if (titulo) return titulo[1].replace(/\s+/g, ' ').trim();
-    return `HTTP ${err.response.status}`;
-  }
+
   if (raw && typeof raw === 'object') {
-    const msg = Object.values(raw).flat().join(' ');
-    if (msg) return msg;
+    // Prioridad 1: Clave explícita de excepciones de dominio de la capa de servicios del backend
+    if (raw.error) return String(raw.error).trim();
+
+    // Prioridad 2: Clave nativa de excepciones de Django REST Framework (JWT, Permisos, etc.)
+    if (raw.detail) return String(raw.detail).trim();
+
+    // Prioridad 3: Filtrar booleanos estructurales (como success: false) y concatenar solo strings/números
+    const valores = Object.values(raw).filter(val => typeof val === 'string' || typeof val === 'number');
+    const msg = valores.flat().join(' ');
+    if (msg) return msg.trim();
   }
-  return err?.message || 'Error desconocido';
+
+  // Fallback ante caídas de servidor o errores de red puros
+  if (err?.message === 'Network Error') {
+    return 'No se pudo establecer conexión con el servidor escolar. Verifique su acceso a internet.';
+  }
+
+  return err?.message || 'Ha ocurrido un error inesperado en la solicitud.';
 };

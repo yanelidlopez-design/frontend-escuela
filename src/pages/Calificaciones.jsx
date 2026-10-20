@@ -23,6 +23,7 @@ export const Calificaciones = () => {
   const [periodos, setPeriodos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [errorDescarga, setErrorDescarga] = useState(null);
   const [copiado, setCopiado] = useState(false);
   // id del periodo que se está alternando (deshabilita su switch durante el PATCH).
   const [alternandoId, setAlternandoId] = useState(null);
@@ -161,7 +162,9 @@ export const Calificaciones = () => {
       descargarPDF(respuesta.data, nombreArchivo);
     } catch (err) {
       const msg = extraerMensajeError(err);
-      alert(msg || 'No se pudo descargar el informe del lapso. Verificá tu conexión o sesión.');
+      setErrorDescarga(msg);
+      // Limpiar el banner automáticamente después de 6 segundos para no ensuciar la UI
+      setTimeout(() => setErrorDescarga(null), 6000);
     } finally {
       setDescargandoLapso((prev) => {
         const siguiente = { ...prev };
@@ -182,7 +185,9 @@ export const Calificaciones = () => {
       descargarPDF(respuesta.data, nombreArchivo);
     } catch (err) {
       const msg = extraerMensajeError(err);
-      alert(msg || 'No se pudo descargar la constancia de prosecución. Verificá tu conexión o sesión.');
+      setErrorDescarga(msg);
+      // Limpiar el banner automáticamente después de 6 segundos para no ensuciar la UI
+      setTimeout(() => setErrorDescarga(null), 6000);
     } finally {
       setDescargandoProsecucion((prev) => {
         const siguiente = { ...prev };
@@ -228,6 +233,22 @@ export const Calificaciones = () => {
       {error && (
         <div className="border border-rose-200 bg-rose-50 text-rose-700 text-sm rounded-xl px-4 py-3">
           {error}
+        </div>
+      )}
+
+      {/* Banner de error de descarga de reportes */}
+      {errorDescarga && (
+        <div className="mb-6 flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 animate-in fade-in duration-300">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">⚠️ Error de Reporte:</span>
+            <span>{errorDescarga}</span>
+          </div>
+          <button
+            onClick={() => setErrorDescarga(null)}
+            className="ml-auto inline-flex h-5 w-5 items-center justify-center rounded-md text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors"
+          >
+            ✕
+          </button>
         </div>
       )}
 
