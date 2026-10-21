@@ -7,6 +7,7 @@ import { Asistencias } from './pages/Asistencias';
 import { Alumnos } from './pages/Alumnos';
 import { Inscripciones } from './pages/Inscripciones';
 import { Calificaciones } from './pages/Calificaciones';
+import { CargaNotasDocente } from './pages/CargaNotasDocente';
 
 function MainContent() {
   const { isAuthenticated } = useAuth();
@@ -41,6 +42,16 @@ function MainContent() {
 }
 
 export default function App() {
+  // Si la URL trae un token de acceso externo, renderizamos directamente el
+  // formulario de carga de notas (sin login ni layout de administrador),
+  // igual que el enlace público de inscripción.
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+
+  if (token) {
+    return <CargaNotasDocente />;
+  }
+
   return (
     <AuthProvider>
       <MainContent />
