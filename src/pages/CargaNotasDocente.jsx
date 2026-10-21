@@ -360,118 +360,102 @@ export default function CargaNotasDocente() {
   // ------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-slate-50 py-6 px-4 sm:px-6 lg:px-8">
-      {/* Banner */}
-      <div className="max-w-4xl mx-auto mb-6">
-        <div
-          className={`rounded-xl p-5 shadow-sm border border-slate-200 flex items-start gap-4 ${
-            vencido
-              ? 'bg-rose-50 border-rose-200'
-              : 'bg-white border-slate-200'
-          }`}
-        >
-          <div className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-            vencido ? 'bg-rose-100 text-rose-600' : 'bg-sky-100 text-sky-600'
-          }`}>
-            {vencido ? '⚠' : '📋'}
+      {/* Tarjeta principal centrada */}
+      <div className="max-w-2xl mx-auto">
+        {/* Encabezado del formulario */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-slate-100 text-slate-600 mb-3 mx-auto">
+            <span className="text-lg">📝</span>
           </div>
-          <div>
-            <h2 className={`text-sm font-semibold ${
-              vencido ? 'text-rose-800' : 'text-slate-800'
-            }`}>{bannerTitle}</h2>
-            <p className={`text-xs mt-1 ${
-              vencido ? 'text-rose-600' : 'text-slate-600'
-            }`}>
-              {vencido
-                ? 'Este enlace ha vencido (superó la fecha límite). Algunos campos podrían no estar disponibles.'
-                : `Lapso ${config?.numero_periodo}: ${lapsoLabel}. Complete la evaluación de cada estudiante y guarde la sección entera.`}
-            </p>
-          </div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Formulario de Calificaciones</h2>
+          <p className="text-sm text-slate-600 mb-4">
+            Complete los datos para evaluar a su representado. Los campos con{' '}
+            <span className="text-rose-500 font-bold">*</span> son obligatorios.
+          </p>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+            {lapsoLabel}
+          </span>
         </div>
-      </div>
 
-      {/* Alerta de vencimiento */}
-      {vencido && (
-        <div className="max-w-4xl mx-auto mb-4">
-          <div className="rounded-lg p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm">
-            <strong>Atención:</strong> el periodo de carga de notas ha concluido o está cerrado.
-            El envío puede ser rechazado por el backend.
-          </div>
-        </div>
-      )}
-
-      {/* Banner de borrador restaurado desde localStorage */}
-      {draftRestored && (
-        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 animate-in fade-in duration-300">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">📋 Borrador restaurado:</span>
-            <span>
-              Se ha restaurado un borrador guardado localmente de forma automática.
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Banner de error de API */}
-      {error && (
-        <div className="max-w-4xl mx-auto mb-4">
-          <div className="rounded-lg p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm">
-            {error}
-          </div>
-        </div>
-      )}
-
-      {/* Selector de grupo y nivel (cuando no vienen precargados) */}
-      {!idGrupoAcademico || !nivelEducativo ? (
-        <div className="max-w-4xl mx-auto mb-6">
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-800 mb-3">
-              🏫 Seleccione su grupo académico
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {!idGrupoAcademico && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-medium text-slate-600">Grupo académico (ID)</label>
-                  <input
-                    type="number"
-                    placeholder="Ej: 5"
-                    value={idGrupoAcademico}
-                    onChange={(e) => setIdGrupoAcademico(e.target.value)}
-                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-sky-500 focus:outline-none"
-                  />
-                </div>
-              )}
-              {!nivelEducativo && (
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-medium text-slate-600">Nivel educativo</label>
-                  <select
-                    value={nivelEducativo}
-                    onChange={(e) => setNivelEducativo(e.target.value)}
-                    className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-sky-500 focus:outline-none bg-white"
-                  >
-                    <option value="">Seleccione…</option>
-                    <option value="Primaria">Primaria</option>
-                    <option value="Educación Inicial">Educación Inicial</option>
-                  </select>
-                </div>
-              )}
-              {idGrupoAcademico && nivelEducativo && (
-                <button
-                  onClick={() => {
-                    inicializarFormData(alumnos);
-                  }}
-                  className="mt-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm rounded-lg transition"
-                >
-                  Aplicar selección
-                </button>
-              )}
+        {/* Banner de borrador restaurado desde localStorage */}
+        {draftRestored && (
+          <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 animate-in fade-in duration-300">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">📋 Borrador restaurado:</span>
+              <span>
+                Se ha restaurado un borrador guardado localmente de forma automática.
+              </span>
             </div>
           </div>
-        </div>
-      ) : null}
+        )}
+
+        {/* Banner de error de API */}
+        {error && (
+          <div className="mb-6 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+            {error}
+          </div>
+        )}
+
+        {/* Alerta de vencimiento */}
+        {vencido && (
+          <div className="mb-6 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+            <strong className="font-semibold">Atención:</strong> el periodo de carga de notas ha concluido o está cerrado.
+            El envío puede ser rechazado por el backend.
+          </div>
+        )}
+
+        {/* Selector de grupo y nivel (cuando no vienen precargados) */}
+        {!idGrupoAcademico || !nivelEducativo ? (
+          <div className="mb-8">
+            <h3 className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3">
+              Datos del grupo académico
+            </h3>
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {!idGrupoAcademico && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-medium text-slate-600">Grupo académico (ID)</label>
+                    <input
+                      type="number"
+                      placeholder="Ej: 5"
+                      value={idGrupoAcademico}
+                      onChange={(e) => setIdGrupoAcademico(e.target.value)}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-sky-500 focus:outline-none"
+                    />
+                  </div>
+                )}
+                {!nivelEducativo && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-medium text-slate-600">Nivel educativo</label>
+                    <select
+                      value={nivelEducativo}
+                      onChange={(e) => setNivelEducativo(e.target.value)}
+                      className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-sky-500 focus:outline-none bg-white"
+                    >
+                      <option value="">Seleccione…</option>
+                      <option value="Primaria">Primaria</option>
+                      <option value="Educación Inicial">Educación Inicial</option>
+                    </select>
+                  </div>
+                )}
+                {idGrupoAcademico && nivelEducativo && (
+                  <button
+                    onClick={() => {
+                      inicializarFormData(alumnos);
+                    }}
+                    className="mt-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm rounded-lg transition"
+                  >
+                    Aplicar selección
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
 
       {/* Formulario principal */}
       {(alumnos.length > 0 || !loading) && (
-        <form onSubmit={handleGuardar} className="max-w-4xl mx-auto">
+        <form onSubmit={handleGuardar} className="space-y-6">
           {/* Selectores de contexto (sólo si ya se cargaron alumnos) */}
           {idGrupoAcademico && nivelEducativo && (
             <div className="mb-4 flex flex-wrap items-center gap-3 text-xs">
@@ -668,6 +652,7 @@ export default function CargaNotasDocente() {
           </div>
         </form>
       )}
+      </div>
     </div>
   );
 };
